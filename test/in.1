@@ -1,13 +1,13 @@
-variable Reset_Time equal 40000000 
+variable Reset_Time equal 0
 variable T_system equal 300 
-variable Timestep equal 0.004
-variable Run equal 50 
+variable Timestep equal 0.003
+variable Run equal 5000 
 # ======begin (common information) ==== 
 units		metal
 atom_style	atomic
 boundary   p p p 
 # === generate crd =====
-read_data	crd.lmp 
+read_data	crd_300_03_4
 #=== masses, groups ===
 mass 1 63.546000 
 group Cu type 1 
@@ -19,7 +19,7 @@ neighbor	5.0 bin
 neigh_modify	every 1 delay 0 check yes 
  
 pair_style hybrid lj/cut 10.  eam
-pair_coeff 1 1 eam /home/vorontsov/work/Cu_u3.eam 
+pair_coeff 1 1 eam Cu_u3.eam 
 pair_coeff 1 2 lj/cut 0.0123 3.76  
 pair_coeff 2 2 lj/cut 0.0123 3.76 
  
@@ -29,28 +29,18 @@ thermo	100
  
 #=== clusters control ===
 #compute 	cff all ngbr/atom 3.5 3
-#compute  clu all cluster/en/atom 7.0
+#compute  clu35 all cluster/atom 3.5
+compute  clu5 all cluster/atom 5.0
+compute  clu8 all cluster/atom 8.0
+compute  ke1 all ke/atom 
+compute  pe1 all pe/atom 
 
-compute  ke all ke/atom 
-compute  pe all pe/atom 
-variable b atom c_ke+c_pe
-compute  clu all cluster/ave/atom 7.0 c_ke 
-compute  cluu all cluster/ave/atom 7.0  
-
-compute  clus all cluster/atom 7.0
-
-#fix 133 all clusters_del 20 clu 60
-#fix 131 all monomer 25 clu 5000 1234 r_min 5.
-
-#dump   clust_dump all custom 50 dump_clust.* id type c_clus c_cluu[1] c_cluu[2]
-# c_cluu[3] c_cluu[4] 
-#dump_modify   clust_dump thresh c_cff[1] > 0  
- 
+dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu8 c_clu5  c_ke1 c_pe1
 #=== temperature control ===
 fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5 
 fix		nve_fix all nve 
-#run		200 
+run		${Run} 
 
 #=== final information ===
-#dump   last_dmp all custom 1000 dump_last.lmp id type x y z vx vy vz c_clu
+#dump   last_dmp all custom 300 dump_last.lmp id type x y z vx vy vz
 #run 0 

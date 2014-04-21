@@ -753,6 +753,15 @@ end program simple
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! make one step of LAMMPS simulation 
+! buf (out) - output data
+! list - 
+! natoms (out) - number of atoms
+! lmp (in) - LAMMPS pointer
+! me (in) - processor rank
+! lammps_fl (in) - if LAMMPS runing on this processor
+! nprocs (in) - number of processors
+
 subroutine one_step_data (buf, natoms, lmp, me,lammps_fl,nprocs)
    use MPI
    use LAMMPS

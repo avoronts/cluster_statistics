@@ -16,9 +16,9 @@ CXXFLAGS = -O2 -fPIC
 CPPFLAGS =
 LDFLAGS = -L. -llammps -L$(HOME)/lib
 
-all : program.x move
+all : program1.x move
 
-program.x : LAMMPS.o LAMMPS-wrapper.o program.o
+program1.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o prog_ae1.o
 	$(FC) $(LDFLAGS) $+ -o $@
 
 LAMMPS.o lammps.mod : LAMMPS.F90
@@ -26,6 +26,9 @@ LAMMPS.o lammps.mod : LAMMPS.F90
 
 LAMMPS-wrapper.o : LAMMPS-wrapper.cpp LAMMPS-wrapper.h
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -I$(LAMMPS_SRC) -I.
+
+LAMMPS_gether.o lammps_gether.mod : LAMMPS_gether.f90
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $<
 
 %.o: %.f90
 	$(FC) $(FFLAGS) -c $<
