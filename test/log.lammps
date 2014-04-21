@@ -1,0 +1,142 @@
+LAMMPS (5 Apr 2014)
+variable Reset_Time equal 40000000
+variable T_system equal 300
+variable Timestep equal 0.004
+variable Run equal 50
+# ======begin (common information) ====
+units		metal
+atom_style	atomic
+boundary   p p p
+# === generate crd =====
+read_data	crd.lmp
+  orthogonal box = (0 0 0) to (1098.47 1098.47 1098.47)
+  1 by 1 by 3 MPI processor grid
+  reading atoms ...
+  64379 atoms
+  reading velocities ...
+  64379 velocities
+#=== masses, groups ===
+mass 1 63.546000
+group Cu type 1
+54379 atoms in group Cu
+mass 2 39.948000
+group Ar type 2
+10000 atoms in group Ar
+
+#= interaction ===
+neighbor	5.0 bin
+neigh_modify	every 1 delay 0 check yes
+
+pair_style hybrid lj/cut 10.  eam
+pair_coeff 1 1 eam /home/vorontsov/work/Cu_u3.eam
+pair_coeff 1 2 lj/cut 0.0123 3.76
+pair_coeff 2 2 lj/cut 0.0123 3.76
+
+timestep	${Timestep}
+timestep	0.004
+reset_timestep	${Reset_Time}
+reset_timestep	40000000
+thermo	100
+
+#=== clusters control ===
+#compute 	cff all ngbr/atom 3.5 3
+#compute  clu all cluster/en/atom 7.0
+
+compute  ke all ke/atom
+compute  pe all pe/atom
+variable b atom c_ke+c_pe
+compute  clu all cluster/ave/atom 7.0 c_ke
+WARNING: Copute/Cluster/ave/atom  module by A. Vorontsov (compute_cluster_ave_atom.cpp:38)
+compute  cluu all cluster/ave/atom 7.0
+WARNING: Copute/Cluster/ave/atom  module by A. Vorontsov (compute_cluster_ave_atom.cpp:38)
+
+compute  clus all cluster/atom 7.0
+
+#fix 133 all clusters_del 20 clu 60
+#fix 131 all monomer 25 clu 5000 1234 r_min 5.
+
+#dump   clust_dump all custom 50 dump_clust.* id type c_clus c_cluu[1] c_cluu[2]
+# c_cluu[3] c_cluu[4]
+#dump_modify   clust_dump thresh c_cff[1] > 0
+
+#=== temperature control ===
+fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5
+fix	t_Ar Ar temp/rescale 20 300 ${T_system} 20 0.5
+fix	t_Ar Ar temp/rescale 20 300 300 20 0.5
+fix		nve_fix all nve
+#run		200
+
+#=== final information ===
+#dump   last_dmp all custom 1000 dump_last.lmp id type x y z vx vy vz c_clu
+#run 0
+run 5 pre no post no
+Memory usage per processor = 9.68099 Mbytes
+Step Temp E_pair E_mol TotEng Press 
+40000000    2242.6504   -136068.97            0   -117406.74   0.26342338 
+40000005    2243.1827      -136073            0   -117406.33    0.3084916 
+Loop time of 0.194911 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000005    2243.1827      -136073            0   -117406.33    0.3084916 
+40000010    2240.4872   -136050.61            0   -117406.37   0.42471727 
+Loop time of 0.195279 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000010    2240.4872   -136050.61            0   -117406.37   0.42471727 
+40000015     2239.198   -136039.91            0   -117406.41   0.28899376 
+Loop time of 0.190557 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000015     2239.198   -136039.91            0   -117406.41   0.28899376 
+40000020    2241.5715   -136060.02            0   -117406.76  0.038290569 
+Loop time of 0.190744 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000020    2241.5715   -136060.02            0   -117406.76  0.038290569 
+40000025     2236.517   -136017.21            0   -117406.01  0.082625289 
+Loop time of 0.297346 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000025     2236.517   -136017.21            0   -117406.01  0.082625289 
+40000030    2242.1778   -136064.91            0    -117406.6  0.021793635 
+Loop time of 0.192582 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000030    2242.1778   -136064.91            0    -117406.6  0.021793635 
+40000035    2236.5479   -136017.95            0    -117406.5   0.27458984 
+Loop time of 0.192597 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000035    2236.5479   -136017.95            0    -117406.5   0.27458984 
+40000040    2229.5089   -135958.65            0   -117405.77   0.46458468 
+Loop time of 0.192916 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000040    2229.5089   -135958.65            0   -117405.77   0.46458468 
+40000045    2244.1595   -136081.83            0   -117407.04   0.11019418 
+Loop time of 0.192554 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000045    2244.1595   -136081.83            0   -117407.04   0.11019418 
+40000050    2238.9931   -136037.97            0   -117406.16   0.23513646 
+Loop time of 0.300206 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000050    2238.9931   -136037.97            0   -117406.16   0.23513646 
+40000055    2233.3371   -135991.08            0   -117406.34   0.40845112 
+Loop time of 0.193197 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000055    2233.3371   -135991.08            0   -117406.34   0.40845112 
+40000060    2233.0955   -135989.01            0   -117406.28   0.36933992 
+Loop time of 0.193537 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000060    2233.0955   -135989.01            0   -117406.28   0.36933992 
+40000065     2233.075   -135989.15            0   -117406.59   0.29230486 
+Loop time of 0.192842 on 3 procs for 5 steps with 64379 atoms
+run 5 pre no post no
+Step Temp E_pair E_mol TotEng Press 
+40000065     2233.075   -135989.15            0   -117406.59   0.29230486 
+40000070    2230.8484   -135970.13            0    -117406.1   0.18346598 
+Loop time of 0.301225 on 3 procs for 5 steps with 64379 atoms
