@@ -16,9 +16,9 @@ CXXFLAGS = -O2 -fPIC
 CPPFLAGS =
 LDFLAGS = -L. -llammps -L$(HOME)/lib
 
-all : program1.x move
+all : program.x 
 
-program1.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o prog_ae1.o
+program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o test_mpi_interface.o
 	$(FC) $(LDFLAGS) $+ -o $@
 
 LAMMPS.o lammps.mod : LAMMPS.F90

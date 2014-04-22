@@ -1,61 +1,16 @@
 LAMMPS (5 Apr 2014)
-variable Reset_Time equal 0
-variable T_system equal 300
-variable Timestep equal 0.003
-variable Run equal 5000
-# ======begin (common information) ====
-units		metal
-atom_style	atomic
-boundary   p p p
-# === generate crd =====
-read_data	crd_300_03_4
+Reading data file ...
   orthogonal box = (0 0 0) to (1207 1207 1207)
   1 by 2 by 3 MPI processor grid
   reading atoms ...
   25000 atoms
   reading velocities ...
   25000 velocities
-#=== masses, groups ===
-mass 1 63.546000
-group Cu type 1
 5000 atoms in group Cu
-mass 2 39.948000
-group Ar type 2
 20000 atoms in group Ar
-
-#= interaction ===
-neighbor	5.0 bin
-neigh_modify	every 1 delay 0 check yes
-
-pair_style hybrid lj/cut 10.  eam
-pair_coeff 1 1 eam Cu_u3.eam
-pair_coeff 1 2 lj/cut 0.0123 3.76
-pair_coeff 2 2 lj/cut 0.0123 3.76
-
-timestep	${Timestep}
-timestep	0.003
-reset_timestep	${Reset_Time}
-reset_timestep	0
-thermo	100
-
-#=== clusters control ===
-#compute 	cff all ngbr/atom 3.5 3
-#compute  clu35 all cluster/atom 3.5
-compute  clu5 all cluster/atom 5.0
-compute  clu8 all cluster/atom 8.0
-compute  ke1 all ke/atom
-compute  pe1 all pe/atom
-
-dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu8 c_clu5  c_ke1 c_pe1
-#=== temperature control ===
-fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5
-fix	t_Ar Ar temp/rescale 20 300 ${T_system} 20 0.5
-fix	t_Ar Ar temp/rescale 20 300 300 20 0.5
-fix		nve_fix all nve
-run		${Run}
-run		5000
 WARNING: More than one compute cluster/atom (compute_cluster_atom.cpp:83)
 WARNING: More than one compute cluster/atom (compute_cluster_atom.cpp:83)
+Setting up run ...
 Memory usage per processor = 7.52945 Mbytes
 Step Temp E_pair E_mol TotEng Press 
        0    300.00407    10.208465            0    979.63392   0.63569663 
@@ -130,3 +85,16 @@ Total # of neighbors = 4930
 Ave neighs/atom = 0.1972
 Neighbor list builds = 192
 Dangerous builds = 0
+Step Temp E_pair E_mol TotEng Press 
+forrtl: severe (24): end-of-file during read, unit 50000, file /storage/home/vorontsov/work/cluster_stat/test/dmp_clust5005.txt
+Image              PC                Routine            Line        Source             
+program.x          0000000000483A7E  Unknown               Unknown  Unknown
+program.x          0000000000482516  Unknown               Unknown  Unknown
+program.x          0000000000436A72  Unknown               Unknown  Unknown
+program.x          00000000004112AB  Unknown               Unknown  Unknown
+program.x          0000000000410812  Unknown               Unknown  Unknown
+program.x          0000000000422500  Unknown               Unknown  Unknown
+program.x          000000000040944F  Unknown               Unknown  Unknown
+program.x          000000000040484C  Unknown               Unknown  Unknown
+libc.so.6          00000033E281ECDD  Unknown               Unknown  Unknown
+program.x          0000000000404749  Unknown               Unknown  Unknown

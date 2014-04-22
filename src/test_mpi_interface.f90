@@ -1,5 +1,8 @@
-module LAMMPS_gether
-
+!test simple mpi interface for LAMMPS
+! read data from dummp files and from LAMMPS code
+! and compare  them
+ 
+program simple_test
 
    use MPI
    use LAMMPS
@@ -7,63 +10,19 @@ module LAMMPS_gether
 
    implicit none
 
-   private
+!-----------------------------------------------------------
+interface one_step_data    ! interface  for geting info from lammps nodes
+  subroutine one_step_data (data, natoms, lmp, me,lammps_fl,nprocs)
+     use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
+     implicit none
+     integer , dimension(:), allocatable,  intent(out) :: data
+     type (C_ptr), intent(in) :: lmp
+     integer, intent(in) :: me, lammps_fl,nprocs
+     integer, intent(out) :: natoms
+  end subroutine one_step_data     
+end interface one_step_data
+!----------------------------------------------------------
 
-
-!interface   one_step_data  ! interface  for geting info from lammps nodes
-!  subroutine one_step_data_sorted (data, s_list,natoms, lmp, me,lammps_fl,nprocs)
-!     use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
-!     implicit none
-!     integer , dimension(:), allocatable,  intent(out) :: data, s_list 
-!     type (C_ptr), intent(in) :: lmp
-!     integer, intent(in) :: me, lammps_fl,nprocs
-!     integer, intent(out) :: natoms
- ! end subroutine one_step_data_sorted
-  
-!  subroutine one_step_data_simple (data, natoms, lmp, me,lammps_fl,nprocs)
-!     use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
-!     implicit none
-!     integer , dimension(:), allocatable,  intent(out) :: data
-!     type (C_ptr), intent(in) :: lmp
-!     integer, intent(in) :: me, lammps_fl,nprocs
-!     integer, intent(out) :: natoms
- ! end subroutine one_step_data_simple
-!end interface one_step_data
-
-
-   public :: one_step_data
-!   public :: lammps_instance, C_ptr, C_double, C_int
-
-
-contains
-!--------------------------------------------
-!interface part_my    ! ! interface for find common part of two ordered set of numbers (clusters)
-!  subroutine part_my(clust1,clust2,comm,part1,part2)
-!    implicit none
-!    integer, dimension(:), intent(in):: clust1,clust2
-!    integer, dimension(:), allocatable, intent(out):: comm, part1,part2
-!!    integer, intent(in) :: s1,s2
-!  end subroutine part_my
-!end interface part_my
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!   logical :: in_my
-!   integer :: ierr, me, nprocs    ! for MPI
-
-!   type (C_ptr) :: lmp		! for lammps communication
-!   integer :: lammps_fl, nprocs_main, nprocs_lammps, comm_lammps
-!   integer, dimension(:), allocatable :: buf, s_list
-!   integer :: buf_step, ibuf, natoms, nclusters, mv
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Init MPI, split processors to main and LAMMPS
-! Init LAMMPS
-subroutine init_all (in_file, lmp, me,lammps_fl,nprocs)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   use MPI
-   use LAMMPS
-   use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
-
-   implicit none
    integer :: ierr, me, nprocs    ! for MPI
 
    type (C_ptr) :: lmp		! for lammps communication
@@ -71,6 +30,11 @@ subroutine init_all (in_file, lmp, me,lammps_fl,nprocs)
    integer, dimension(:), allocatable :: buf
    integer :: buf_step, natoms, loop, nloop, mv
 
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!<<<<<<<<<<<<<<<< put initial block here >>>>>>>>>>>>>>>>>>
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
   ! setup MPI and various communicators
   ! driver runs on all procs in MPI_COMM_WORLD
   ! comm_lammps only has 1st P procs (could be all or any subset)
@@ -105,17 +69,50 @@ subroutine init_all (in_file, lmp, me,lammps_fl,nprocs)
     CALL lammps_open('',comm_lammps,lmp)
     call lammps_file (lmp, 'in.1')
   end if
-end subroutine init_all
 
-subroutine final_all()
-   if (allocated(buf)) deallocate(buf)
+!!-------  AE data-------
+!<<<<<<<<<<<<<<<< put everythig befor main loop here >>>>>>>>>>>>>>>>>>
+! open(15,File='t'//trim(sfile)//'.dat')      
+! do ifile=1,nmax
+!   open(1,File=sfile)    !'//trim(sfile)//'
+
+!mcluster_o  = mcluster        !numero de atoms en cada cluster
+!ncluster_o  = ncluster        !numero de cluster que mantiene este atom 
+!cluster_o   = cluster           !numero del atom metallico
+!-------------------------- 
+! end of AE block   >>>>>>>>>>>>>>>>>>>>>>
+
+!!!!!!!!! main loop begin here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+nloop = 0  
+nt=1
+open(1,File='gist.dat') 
+open(2,File='kinet.dat') 
+ open(15,File='t1.dat') 
+!if (me == 0) print  *, 'make ', nloop, ' steps'
+! end of AE block   >>>>>>>>>>>>>>>>>>>>>>
+  print  *, '<<<<<<<<<<< step ', loop, ' done >>>>>>>>>>>>>>>>>'
+enddo	! end of main loop "do loop=1,nloop" (true) ahora
+
+!-----------------------------------------------------
+  if (allocated(buf)) deallocate(buf)
   IF (lammps_fl == 1) CALL lammps_close(lmp);
   ! close down MPI
   CALL mpi_finalize(ierr)
-end subroutine
+
+end program simple_test
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! subroutines
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! make one step of LAMMPS simulation 
+! buf (out) - output data
+! list - 
+! natoms (out) - number of atoms
+! lmp (in) - LAMMPS pointer
+! me (in) - processor rank
+! lammps_fl (in) - if LAMMPS runing on this processor
+! nprocs (in) - number of processors
+
 subroutine one_step_data (buf, natoms, lmp, me,lammps_fl,nprocs)
    use MPI
    use LAMMPS
@@ -176,9 +173,6 @@ subroutine one_step_data (buf, natoms, lmp, me,lammps_fl,nprocs)
       j=j+i
     enddo
   endif
+contains
 end subroutine one_step_data
 
-
-
-
-end module LAMMPS_gether
