@@ -4,175 +4,78 @@
  
 program simple_test
 
-   use MPI
-   use LAMMPS
-   use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
+!   use MPI
+!   use LAMMPS
+    use LAMMPS_gether
+!   use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
 
-   implicit none
+    implicit none
+    integer :: natoms
+!    integer, dimension(:), allocatable :: buf
+    integer nstat,nclu,natom, n_entre,nloop,iloop
+    parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
 
-!-----------------------------------------------------------
-interface one_step_data    ! interface  for geting info from lammps nodes
-  subroutine one_step_data (data, natoms, lmp, me,lammps_fl,nprocs)
-     use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
-     implicit none
-     integer , dimension(:), allocatable,  intent(out) :: data
-     type (C_ptr), intent(in) :: lmp
-     integer, intent(in) :: me, lammps_fl,nprocs
-     integer, intent(out) :: natoms
-  end subroutine one_step_data     
-end interface one_step_data
-!----------------------------------------------------------
-
-   integer :: ierr, me, nprocs    ! for MPI
-
-   type (C_ptr) :: lmp		! for lammps communication
-   integer :: lammps_fl, nprocs_main, nprocs_lammps, comm_lammps
-   integer, dimension(:), allocatable :: buf
-   integer :: buf_step, natoms, loop, nloop, mv
+    character*150 sline,sfile
+    integer*4 typ(1:natom),num_vecino4(1:natom),num_vecino5(1:natom)
+    integer*4 num_atom, M, i,j,id
+    real*8 pot(1 :natom),kin(1: natom)
 
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!<<<<<<<<<<<<<<<< put initial block here >>>>>>>>>>>>>>>>>>
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  ! setup MPI and various communicators
-  ! driver runs on all procs in MPI_COMM_WORLD
-  ! comm_lammps only has 1st P procs (could be all or any subset)
-
-  CALL mpi_init(ierr)
-  CALL mpi_comm_rank(MPI_COMM_WORLD,me,ierr);
-  CALL mpi_comm_size(MPI_COMM_WORLD,nprocs,ierr);
-
-  nprocs_main = 1
-  nprocs_lammps = nprocs-nprocs_main
-
-  IF ((nprocs_lammps < 1).or.(nprocs_main < 1)) THEN
-     IF (me == 0) THEN
-        PRINT *, 'ERROR: LAMMPS cannot use more procs than available'
-        CALL mpi_abort(MPI_COMM_WORLD,2,ierr)
-     END IF
-  END IF
-
-  lammps_fl = 0
-  IF (me < nprocs_main) THEN
-     lammps_fl = MPI_UNDEFINED
-  ELSE
-     lammps_fl = 1
-  END IF
-
-  CALL mpi_comm_split(MPI_COMM_WORLD,lammps_fl,0,comm_lammps,ierr)
-
-  ! open LAMMPS input script on rank zero
-
-  if (me == 0) print  *, 'RUN LAMMPS on ',nprocs_lammps,' processos'
-  if (lammps_fl == 1)  then
-    CALL lammps_open('',comm_lammps,lmp)
-    call lammps_file (lmp, 'in.1')
-  end if
+    call init_mpi_lammps('in.1')
+    if (me == 0) then
+       print  *, '<<<<<<<<<<< mpi_init done >>>>>>>>>>>>>>>>>'
+    endif
 
 !!-------  AE data-------
 !<<<<<<<<<<<<<<<< put everythig befor main loop here >>>>>>>>>>>>>>>>>>
 ! open(15,File='t'//trim(sfile)//'.dat')      
-! do ifile=1,nmax
+nloop = 25
+do iloop=5,nloop,5
 !   open(1,File=sfile)    !'//trim(sfile)//'
-
-!mcluster_o  = mcluster        !numero de atoms en cada cluster
-!ncluster_o  = ncluster        !numero de cluster que mantiene este atom 
-!cluster_o   = cluster           !numero del atom metallico
 !-------------------------- 
 ! end of AE block   >>>>>>>>>>>>>>>>>>>>>>
-
+    call one_step_data(natoms)
 !!!!!!!!! main loop begin here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-nloop = 0  
-nt=1
-open(1,File='gist.dat') 
-open(2,File='kinet.dat') 
- open(15,File='t1.dat') 
-!if (me == 0) print  *, 'make ', nloop, ' steps'
-! end of AE block   >>>>>>>>>>>>>>>>>>>>>>
-  print  *, '<<<<<<<<<<< step ', loop, ' done >>>>>>>>>>>>>>>>>'
-enddo	! end of main loop "do loop=1,nloop" (true) ahora
+    if (me == 0) then
+        print  *, '<<<<<<<<<<< one step done >>>>>>>>>>>>>>>>>',me 
+        write(sfile,'(i0)') iloop
+        open(50000,File='dmp_clust'//trim(sfile)//'.txt')    !'//trim(sfile)//'
+        do i =1,3
+	  read(50000,*) sline     !lea las demas lineas no necesarias
+	enddo
+	Read(50000,*) m  !
+	do i = 5,9
+	  read(50000,*) sline     !lea las demas lineas no necesarias
+	enddo
+         !lea la primera linea
+      ! do while (.not. EOF(1))
+        do j=1,m
+    	Read(50000,*) num_atom,typ(num_atom),num_vecino4(num_atom),num_vecino5(num_atom),kin(num_atom), pot(num_atom)
+        enddo
+        close(50000,status='delete')
+        print  *, '<<<<<<<<<<< read dump done  >>>>>>>>>>>>>>>>>'
+        
+        j=1
+        do i=1,m 
+          id=buf(j)
+          if (buf(j+1) .ne. typ(id)) then
+            print  *, 'bad type in', j,id,buf(j+1),typ(id)
+          endif
+          if (buf(j+2) .ne. num_vecino4(id)) then
+            print  *, 'bad vencino4', id,buf(j+2),num_vecino4(id)
+          endif
+          if (buf(j+3) .ne. num_vecino5(id)) then
+            print  *, 'bad vencino5', id,buf(j+3),num_vecino5(id)
+          endif
+          j=j+4
+        enddo
+        print  *, '<<<<<<<<<<< check done  >>>>>>>>>>>>>>>>>'
+        
+    endif
 
+enddo
 !-----------------------------------------------------
-  if (allocated(buf)) deallocate(buf)
-  IF (lammps_fl == 1) CALL lammps_close(lmp);
-  ! close down MPI
-  CALL mpi_finalize(ierr)
+    call finalize_mpi_lammps()
 
 end program simple_test
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! subroutines
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! make one step of LAMMPS simulation 
-! buf (out) - output data
-! list - 
-! natoms (out) - number of atoms
-! lmp (in) - LAMMPS pointer
-! me (in) - processor rank
-! lammps_fl (in) - if LAMMPS runing on this processor
-! nprocs (in) - number of processors
-
-subroutine one_step_data (buf, natoms, lmp, me,lammps_fl,nprocs)
-   use MPI
-   use LAMMPS
-   use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
-   implicit none
-
-    integer :: status(MPI_STATUS_SIZE)
-      integer , dimension(:), allocatable, intent(out) :: buf
-      type (C_ptr), intent(in) :: lmp
-      integer, intent(in) :: me, lammps_fl,nprocs
-      integer, intent(out) :: natoms
-   integer :: i,j,iproc,ierr
- !  integer, dimension(:), allocatable,target :: buf
-   real (C_double), dimension(:,:), pointer :: comp => NULL()
-   integer (C_int), dimension(:), pointer :: tag => NULL()
-   integer (C_int), dimension(:), pointer :: type => NULL()
-
-! every processor has number of atoms. me=0 takes total number of atoms
-  natoms = 0
-  if (lammps_fl == 1)  then
-    call lammps_command(lmp,'run 5')
-    call lammps_extract_atom (tag, lmp, 'id')
-    call lammps_extract_atom (type, lmp, 'type')
-    call lammps_extract_compute (comp, lmp, 'clu', 1, 2)
-    natoms = size(tag)
-  endif
-  call MPI_Reduce(natoms, i, 1, MPI_INT,MPI_SUM, 0, MPI_COMM_WORLD ,ierr)
-  if (me == 0)  natoms = i
-
-!  print *, 'done',me, natoms
-!  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-
-! send all information to me=0 node
-  if (allocated(buf)) deallocate(buf)
-  allocate (buf(4*natoms))
-
-  if (me .ne. 0)  then
-    j=1
-    do i=1, natoms 
-!      print *, tag(i),type(i),comp(:,i)
-      buf(j)= tag(i)
-      buf(j+1)= type(i)
-      buf(j+2)= idnint(comp(1,i))
-      buf(j+3)= idnint(comp(2,i))
-      j=j+4
-    enddo
-
-!!send inforation to prosess with rank 0
-    call MPI_Send(buf, 4*natoms, MPI_INT, 0, me, MPI_COMM_WORLD, ierr)
-    deallocate(buf)
-  else		! I am rank 0 processor!!!
-!! receive information from other nodes in one bufer
-    j=1
-    do iproc = 1,nprocs-1 
-      call MPI_Recv(buf(j:), 4*natoms, MPI_INT,  iproc, iproc, MPI_COMM_WORLD, status, ierr)
-      call MPI_Get_count( status,  MPI_INT, i, ierr )
-!      print *, me, iproc, i,j,(j+3),(j+i+3)
-      j=j+i
-    enddo
-  endif
-contains
-end subroutine one_step_data
 

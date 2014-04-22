@@ -7,8 +7,8 @@ LAMMPS_SRC = ./lmp #$(LAMMPS_ROOT)/mylammps/
 # Uncomment the line below if using the MPI stubs library
 MPI_STUBS = #-I$(LAMMPS_SRC)/STUBS
 
-FC = mpiifort    # replace with your Fortran compiler
-CXX = mpiicc   # replace with your C++ compiler
+FC = mpif90    # replace with your Fortran compiler
+CXX = mpicc   # replace with your C++ compiler
 
 # Flags for Fortran compiler, C++ compiler, and C preprocessor, respectively
 FFLAGS = -O2 -fPIC
@@ -16,7 +16,7 @@ CXXFLAGS = -O2 -fPIC
 CPPFLAGS =
 LDFLAGS = -L. -llammps -L$(HOME)/lib
 
-all : program.x 
+all : program.x move
 
 program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o test_mpi_interface.o
 	$(FC) $(LDFLAGS) $+ -o $@
