@@ -13,11 +13,13 @@ module LAMMPS_gether
      type (C_ptr) :: lmp		! for lammps communication
      integer :: nprocs_main, nprocs_lammps, comm_lammps
      
-    integer :: natoms
 
    integer, public :: me    ! for MPI
 
-   integer, dimension(:), allocatable,public :: buf
+   integer, public :: natoms = 0
+   integer, dimension(:), allocatable,public :: int_buf
+   double precision, dimension(:), allocatable,public :: dbl_buf
+   
    integer :: int_peratom = 4
    integer :: dbl_peratom = 2
    
@@ -78,15 +80,16 @@ subroutine init_mpi_lammps (file_name)
 end subroutine init_mpi_lammps
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111
-! finalize lammps
 ! deallocate arrays
+! finalize lammps
 ! finalize MPI
 subroutine finalize_mpi_lammps()
 
-   if (allocated(buf)) deallocate(buf)
-   IF (lammps_fl == 1) CALL lammps_close(lmp);
-  ! close down MPI
+   if (allocated(int_buf)) deallocate(int_buf)
+   if (allocated(dbl_buf)) deallocate(dbl_buf)
+   if (lammps_fl == 1) call lammps_close(lmp);
    CALL mpi_finalize(ierr)
+
 end subroutine finalize_mpi_lammps
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -99,35 +102,33 @@ end subroutine finalize_mpi_lammps
 ! lammps_fl (in) - if LAMMPS runing on this processor
 ! nprocs (in) - number of processors
 
-subroutine one_step_data (natoms)
-!    use MPI
-!    use LAMMPS
-!    use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
+subroutine one_step_data (step)
+
     implicit none
+    integer, intent(in) :: step 
 
     integer :: status(MPI_STATUS_SIZE)
-    integer, intent(out) :: natoms
-!    integer, dimension(:), allocatable, intent(inout) :: buf
+    integer :: i,j,j_int, j_dbl,iproc,ierr
+    character*15 :: str
 
-
-    integer :: i,j,iproc,ierr
- !  integer, dimension(:), allocatable,target :: buf
     real (C_double), dimension(:), pointer :: comp => NULL()
     real (C_double), dimension(:), pointer :: comp1 => NULL()
-    
+    real (C_double), dimension(:), pointer :: comp2 => NULL()
+    real (C_double), dimension(:), pointer :: comp3 => NULL()
     integer (C_int), dimension(:), pointer :: tag => NULL()
     integer (C_int), dimension(:), pointer :: type => NULL()
 
 ! every processor has number of atoms. me=0 takes total number of atoms
+    write(str,'(i0)') step
     natoms = 0
     if (lammps_fl == 1)  then
-       call lammps_command(lmp,'run 5 pre no post no')
+       call lammps_command(lmp,'run '//trim(str)//' pre no post no')
        call lammps_extract_atom (tag, lmp, 'id')
        call lammps_extract_atom (type, lmp, 'type')
        call lammps_extract_compute (comp, lmp, 'clu8', 1, 1)
        call lammps_extract_compute (comp1, lmp, 'clu5', 1, 1)
-!       call lammps_extract_compute (comp, lmp, 'ke1', 1, 1)
-!       call lammps_extract_compute (comp, lmp, 'pe1', 1, 1)
+       call lammps_extract_compute (comp2, lmp, 'ke1', 1, 1)
+       call lammps_extract_compute (comp3, lmp, 'pe1', 1, 1)
 !       call lammps_extract_compute (comp, lmp, 'clu', 1, 2) ! 2d array
        natoms = size(tag)
     endif
@@ -137,41 +138,63 @@ subroutine one_step_data (natoms)
 !    print *, 'done',me, natoms
 !  call MPI_BARRIER(MPI_COMM_WORLD, ierr)
 
-! send all information to me=0 node
-!    buf_step=size(buf)/natoms
-
+!   send all information to me=0 node
+    if (.not.allocated(int_buf)) allocate(int_buf(int_peratom*natoms)) 
+    if (size(int_buf) .ne. int_peratom*natoms) then
+       deallocate(int_buf)
+       allocate (int_buf(int_peratom*natoms))
+    endif
     
-    if (.not.allocated(buf)) allocate (buf(int_peratom*natoms)) 
-    if (size(buf) .ne. int_peratom*natoms) then
-       deallocate(buf)
-       allocate (buf(int_peratom*natoms))
+    if (.not.allocated(dbl_buf)) allocate(dbl_buf(dbl_peratom*natoms)) 
+    if (size(dbl_buf) .ne. dbl_peratom*natoms) then
+       deallocate(dbl_buf)
+       allocate (dbl_buf(dbl_peratom*natoms))
     endif
 
     if (me .ne. 0)  then
-        j=1
+        j_int=1
+        j_dbl=1
         do i=1, natoms 
 !      print *, tag(i),type(i),comp(:,i)
-          buf(j)= tag(i)
-          buf(j+1)= type(i)
-          buf(j+2)= idnint(comp(i))
-          buf(j+3)= idnint(comp1(i))
+          int_buf(j_int)= tag(i)
+          int_buf(j_int+1)= type(i)
+          int_buf(j_int+2)= idnint(comp(i))
+          int_buf(j_int+3)= idnint(comp1(i))
     !      buf(j+3)= idnint(comp(2,i))
-          j=j+4
+          j_int=j_int+4
+
+          dbl_buf(j_dbl)= comp2(i)
+          dbl_buf(j_dbl+1)=comp3(i)
+          j_dbl=j_dbl+2
         enddo
 
 !!send inforation to prosess with rank 0
-        call MPI_Send(buf, int_peratom*natoms, MPI_INT, 0, me, MPI_COMM_WORLD, ierr)
-        deallocate(buf)
+        call MPI_Send(int_buf, int_peratom*natoms, MPI_INT, 0, me, MPI_COMM_WORLD, ierr)
+        deallocate(int_buf)
+
+        call MPI_Send(dbl_buf, dbl_peratom*natoms, MPI_DOUBLE, 0, me, MPI_COMM_WORLD, ierr)
+        deallocate(dbl_buf)
+        
     else		! I am rank 0 processor!!!
 !! receive information from other nodes in one bufer
         j=1
         do iproc = 1,nprocs-1 
-          call MPI_Recv(buf(j:), int_peratom*natoms, MPI_INT,  iproc, iproc, MPI_COMM_WORLD, status, ierr)
+          call MPI_Recv(int_buf(j:), int_peratom*natoms, MPI_INT,  iproc, iproc, MPI_COMM_WORLD, status, ierr)
           call MPI_Get_count( status,  MPI_INT, i, ierr )
 !      print *, me, iproc, i,j,(j+3),(j+i+3)
           j=j+i
         enddo
+!! receive information from other nodes in one bufer
+        j=1
+        do iproc = 1,nprocs-1 
+          call MPI_Recv(dbl_buf(j:), dbl_peratom*natoms, MPI_DOUBLE,  iproc, iproc, MPI_COMM_WORLD, status, ierr)
+          call MPI_Get_count( status,  MPI_DOUBLE, i, ierr )
+!      print *, me, iproc, i,j,(j+3),(j+i+3)
+          j=j+i
+        enddo
+
     endif
+
 end subroutine one_step_data
 
 

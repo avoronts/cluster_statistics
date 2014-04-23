@@ -4,40 +4,31 @@
  
 program simple_test
 
-!   use MPI
-!   use LAMMPS
     use LAMMPS_gether
-!   use, intrinsic :: ISO_C_binding, only : C_double, C_ptr, C_int
 
     implicit none
-    integer :: natoms
-!    integer, dimension(:), allocatable :: buf
-    integer nstat,nclu,natom, n_entre,nloop,iloop
-    parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
 
+    integer natom
+    parameter(natom=25001)
+    integer :: nloop,iloop
     character*150 sline,sfile
     integer*4 typ(1:natom),num_vecino4(1:natom),num_vecino5(1:natom)
-    integer*4 num_atom, M, i,j,id
     real*8 pot(1 :natom),kin(1: natom)
+    integer*4 num_atom, m, i,j,id,j_dbl
 
-
+!<<<<<<<<<<<<<<<< program start here !  >>>>>>>>>>>>>>>>>>
     call init_mpi_lammps('in.1')
-    if (me == 0) then
-       print  *, '<<<<<<<<<<< mpi_init done >>>>>>>>>>>>>>>>>'
-    endif
+    if (me == 0) print *, '<<<<<<<<<<< mpi_init done >>>>>>>>>>>>>>>>>'
 
-!!-------  AE data-------
-!<<<<<<<<<<<<<<<< put everythig befor main loop here >>>>>>>>>>>>>>>>>>
-! open(15,File='t'//trim(sfile)//'.dat')      
+!<<<<<<<<<<<<<<<< main loop >>>>>>>>>>>>>>>>>>
 nloop = 25
-do iloop=5,nloop,5
-!   open(1,File=sfile)    !'//trim(sfile)//'
-!-------------------------- 
-! end of AE block   >>>>>>>>>>>>>>>>>>>>>>
-    call one_step_data(natoms)
-!!!!!!!!! main loop begin here !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
+do iloop = 5,nloop,5
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    call one_step_data(5)
+    if (me == 0) print  *, '<<<<<<<<<<< one step done >>>>>>>>>>>>>>>>>'
+    
+!!!!!!!!!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     if (me == 0) then
-        print  *, '<<<<<<<<<<< one step done >>>>>>>>>>>>>>>>>',me 
         write(sfile,'(i0)') iloop
         open(50000,File='dmp_clust'//trim(sfile)//'.txt')    !'//trim(sfile)//'
         do i =1,3
@@ -53,27 +44,28 @@ do iloop=5,nloop,5
     	Read(50000,*) num_atom,typ(num_atom),num_vecino4(num_atom),num_vecino5(num_atom),kin(num_atom), pot(num_atom)
         enddo
         close(50000,status='delete')
+!        close(50000)
+    
         print  *, '<<<<<<<<<<< read dump done  >>>>>>>>>>>>>>>>>'
         
         j=1
+        j_dbl=1
         do i=1,m 
-          id=buf(j)
-          if (buf(j+1) .ne. typ(id)) then
-            print  *, 'bad type in', j,id,buf(j+1),typ(id)
-          endif
-          if (buf(j+2) .ne. num_vecino4(id)) then
-            print  *, 'bad vencino4', id,buf(j+2),num_vecino4(id)
-          endif
-          if (buf(j+3) .ne. num_vecino5(id)) then
-            print  *, 'bad vencino5', id,buf(j+3),num_vecino5(id)
-          endif
+          id=int_buf(j)
+!          if (int_buf(j+1) .ne. typ(id))   print  *, 'bad type in', j,id,int_buf(j+1),typ(id)
+!          if (int_buf(j+2) .ne. num_vecino4(id)) print  *, 'bad vencino4', id,int_buf(j+2),num_vecino4(id)
+!          if (int_buf(j+3) .ne. num_vecino5(id)) print  *, 'bad vencino5', id,int_buf(j+3),num_vecino5(id)
           j=j+4
+          
+!          if (abs(dbl_buf(j_dbl)-kin(id)) .gt. 1e-5) print  *, 'bad kin', id,dbl_buf(j_dbl),kin(id)
+          if (abs(dbl_buf(j_dbl+1)- pot(id)) .gt. 1e-5) print  *, 'bad pot', id,dbl_buf(j_dbl+1),pot(id)
+          j_dbl=j_dbl+2
         enddo
         print  *, '<<<<<<<<<<< check done  >>>>>>>>>>>>>>>>>'
         
-    endif
+    endif   
 
-enddo
+enddo       !<<<<<<<<<<<<<<<< end of main loop >>>>>>>>>>>>>>>>>>
 !-----------------------------------------------------
     call finalize_mpi_lammps()
 
