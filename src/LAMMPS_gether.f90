@@ -42,7 +42,6 @@ subroutine init_mpi_lammps (file_name)
    implicit none
    
    character(*), intent(in) :: file_name
-
   ! setup MPI and various communicators
   ! driver runs on all procs in MPI_COMM_WORLD
   ! comm_lammps only has 1st P procs (could be all or any subset)
@@ -105,11 +104,11 @@ end subroutine finalize_mpi_lammps
 subroutine one_step_data (step)
 
     implicit none
-    integer, intent(in) :: step 
 
+    integer :: step 
     integer :: status(MPI_STATUS_SIZE)
     integer :: i,j,j_int, j_dbl,iproc,ierr
-    character*15 :: str
+    character*15 :: str_step
 
     real (C_double), dimension(:), pointer :: comp => NULL()
     real (C_double), dimension(:), pointer :: comp1 => NULL()
@@ -119,10 +118,13 @@ subroutine one_step_data (step)
     integer (C_int), dimension(:), pointer :: type => NULL()
 
 ! every processor has number of atoms. me=0 takes total number of atoms
-    write(str,'(i0)') step
+    write(str_step,'(i0)') step
+
     natoms = 0
     if (lammps_fl == 1)  then
-       call lammps_command(lmp,'run '//trim(str)//' pre no post no')
+!     call lammps_command(lmp,'fix fff all ave/atom 1 1 '//trim(str_step)//' c_pe1')
+
+       call lammps_command(lmp,'run '//trim(str_step)//' pre no post no')
        call lammps_extract_atom (tag, lmp, 'id')
        call lammps_extract_atom (type, lmp, 'type')
        call lammps_extract_compute (comp, lmp, 'clu8', 1, 1)

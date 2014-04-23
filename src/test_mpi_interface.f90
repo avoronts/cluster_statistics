@@ -43,8 +43,8 @@ do iloop = 5,nloop,5
         do j=1,m
     	Read(50000,*) num_atom,typ(num_atom),num_vecino4(num_atom),num_vecino5(num_atom),kin(num_atom), pot(num_atom)
         enddo
-        close(50000,status='delete')
-!        close(50000)
+!        close(50000,status='delete')
+        close(50000)
     
         print  *, '<<<<<<<<<<< read dump done  >>>>>>>>>>>>>>>>>'
         
@@ -52,12 +52,12 @@ do iloop = 5,nloop,5
         j_dbl=1
         do i=1,m 
           id=int_buf(j)
-!          if (int_buf(j+1) .ne. typ(id))   print  *, 'bad type in', j,id,int_buf(j+1),typ(id)
-!          if (int_buf(j+2) .ne. num_vecino4(id)) print  *, 'bad vencino4', id,int_buf(j+2),num_vecino4(id)
-!          if (int_buf(j+3) .ne. num_vecino5(id)) print  *, 'bad vencino5', id,int_buf(j+3),num_vecino5(id)
+          if (int_buf(j+1) .ne. typ(id))   print  *, 'bad type in', j,id,int_buf(j+1),typ(id)
+          if (int_buf(j+2) .ne. num_vecino4(id)) print  *, 'bad vencino4', id,int_buf(j+2),num_vecino4(id)
+          if (int_buf(j+3) .ne. num_vecino5(id)) print  *, 'bad vencino5', id,int_buf(j+3),num_vecino5(id)
           j=j+4
           
-!          if (abs(dbl_buf(j_dbl)-kin(id)) .gt. 1e-5) print  *, 'bad kin', id,dbl_buf(j_dbl),kin(id)
+          if (abs(dbl_buf(j_dbl)-kin(id)) .gt. 1e-5) print  *, 'bad kin', id,dbl_buf(j_dbl),kin(id)
           if (abs(dbl_buf(j_dbl+1)- pot(id)) .gt. 1e-5) print  *, 'bad pot', id,dbl_buf(j_dbl+1),pot(id)
           j_dbl=j_dbl+2
         enddo

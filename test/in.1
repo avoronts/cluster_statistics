@@ -34,8 +34,9 @@ compute  clu5 all cluster/atom 5.0
 compute  clu8 all cluster/atom 8.0
 compute  ke1 all ke/atom 
 compute  pe1 all pe/atom pair
+fix fff all ave/atom 5 1 5 c_pe1
 
-dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu8 c_clu5  c_ke1 c_pe1
+#dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu8 c_clu5  c_ke1 c_pe1
 #=== temperature control ===
 fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5 
 fix		nve_fix all nve 
