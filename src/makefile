@@ -18,7 +18,7 @@ LDFLAGS = -L. -llammps -L$(HOME)/lib
 
 all : program.x move
 
-program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o test_mpi_interface.o
+program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o program.f90 #test_mpi_interface.o
 	$(FC) $(LDFLAGS) $+ -o $@
 
 LAMMPS.o lammps.mod : LAMMPS.F90
