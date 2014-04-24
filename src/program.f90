@@ -69,7 +69,7 @@ ikp=0
 
         j=1
         jj=1
-        do i=1,m 
+        do i=1,natoms
           num_atom=int_buf(j)
           typ(num_atom) = int_buf(j+1) 
           num_vecino4(num_atom) = int_buf(j+2) 
