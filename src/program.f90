@@ -21,7 +21,7 @@ integer*8 n1, n2, iarg
     integer*4  nmax /10000/,natraso /5/,sostav(500)
   
     real*8 pot(1 :natom),kin(1: natom),l2
-character*17 sdir/'c:\1500_1\for_me\'/
+
     integer cluster(1:nclu,1:nstat),cluster_o(1:nclu,1:nstat)
     integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
         type hist
@@ -44,7 +44,7 @@ cluster_o =0          !numero del atom metallico
   CALL init_mpi_lammps('in.1') !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
   
   
-nt=1
+nt=0
 !!me=1 ! DON'T forget to borrar it!
   ! do something
           do i=1,5000
@@ -79,21 +79,23 @@ ikp=0
           kin(num_atom) = dbl_buf(jj)
           pot(num_atom) = dbl_buf(jj+1)
           jj=jj+2
+
         enddo
         print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
        
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
- write(sfile,'(i0)') nttfile
- open(41000,File='osc'//trim(sfile)//'.dat') 
+if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
+ write(sfile,'(i0)') nt/nmax
+ !open(41000,File='osc'//trim(sfile)//'.dat') 
  !open(15,File='t'//trim(sfile)//'.dat')      
  open(44000,File='r'//trim(sfile)//'.dat')      
 open(42000,File='pro_argon'//trim(sfile)//'.dat')
 ! open(43000,File='pro_argon_menos'//trim(sfile)//'.dat')      
 ! open(47000,File='prot'//trim(sfile)//'.dat')      
- 
-                do ifile=1,nmax
-  
+endif
+
+!                do ifile=1,nmax
+!										    if (me.eq.1) then  
     mcluster_o= mcluster
     ncluster_o=ncluster
     cluster_o=cluster
@@ -103,16 +105,7 @@ open(42000,File='pro_argon'//trim(sfile)//'.dat')
 
 mcluster=0
 mcluster7=0
-
-
-
-iras=0
-
-
-
-! first we have to determine the kinetic energy        
-
-      ncluster=0
+	ncluster=0
       cluster=0
       cluster7=0
       ncluster7=0
@@ -121,7 +114,7 @@ iras=0
       ik=0
 cyp=0
 
-do num_atom=1,m
+do num_atom=1,natoms
     if (num_vecino4(num_atom).ne.num_atom ) then   
             
              if (Ncluster7(num_vecino4(num_atom))==0) then
@@ -187,7 +180,7 @@ if (typ(num_atom) .ne.2) lcluster(i)=lcluster(i)+1
     do i=1,cur_clu-1   ! это набор кластеров на данный момент
     lstat(lcluster(i))=lstat(lcluster(i))+1
     enddo         
-         
+!write(112,('(40(i7,1x))')) (lstat(i),i=1,15)
    
 do i=1,natom
 if (cyp(i) .ne. 10)   cyp(i)=0
@@ -448,7 +441,7 @@ endif
 !!!!!!!
             if (ik==-4 .or. ip==-4) then
             ikk=1 !
-                 write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,12)
+!                 write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,12)
 
 if( knumjt==knumj_all .or. knumjt==knumt_all) then   ! el cluster se recupero hasta el tama?o inicial
 do i=1,knumjt   !новый
@@ -817,12 +810,12 @@ knumj_all=ip-1
 nt=nt+1
  !change it after the prove!
 
-      enddo    !from do ifile=1,nmax para leerlos
-!											endif   !from if it is the first process
+!      enddo    !from do ifile=1,nmax para leerlos
+										!	endif   !from if it is the first process
    
 ! esta borrando  
 
-  nttfile=nttfile+1
+ ! nttfile=nttfile+1
 	
 ! call lammps_command (lmp, 'run 50000 pre no post no')
 									    enddo    !from do while .true.
