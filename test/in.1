@@ -1,7 +1,10 @@
+log none
+echo none
+
 variable Reset_Time equal 0
 variable T_system equal 300 
 variable Timestep equal 0.003
-variable Run equal 5000 
+variable Run equal 50000 
 # ======begin (common information) ==== 
 units		metal
 atom_style	atomic
@@ -14,29 +17,30 @@ group Cu type 1
 mass 2 39.948000 
 group Ar type 2 
 
+timestep	${Timestep} 
+reset_timestep	${Reset_Time} 
+thermo	100
+
 #= interaction ===
 neighbor	5.0 bin
 neigh_modify	every 1 delay 0 check yes 
- 
+write_restart restart_file0
+clear
+
+#  ====== end of initial steps ============== 
+read_restart restart_file*
 pair_style hybrid lj/cut 10.  eam
 pair_coeff 1 1 eam Cu_u3.eam 
 pair_coeff 1 2 lj/cut 0.0123 3.76  
 pair_coeff 2 2 lj/cut 0.0123 3.76 
- 
-timestep	${Timestep} 
-reset_timestep	${Reset_Time} 
-thermo	100
- 
+
 #=== clusters control ===
-#compute 	cff all ngbr/atom 3.5 3
-#compute  clu35 all cluster/atom 3.5
 compute  clu5 all cluster/atom 5.0
 compute  clu8 all cluster/atom 8.0
 compute  ke1 all ke/atom 
 compute  pe1 all pe/atom pair
 fix fff all ave/atom 5 1 5 c_pe1
 
-#dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu8 c_clu5  c_ke1 c_pe1
 #=== temperature control ===
 fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5 
 fix		nve_fix all nve 

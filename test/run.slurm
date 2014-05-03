@@ -1,9 +1,8 @@
 #!/bin/bash
 
-#SBATCH -N 6
-#SBATCH -t 2000
-##SBATCH -p debug
+#SBATCH -N 1
+#SBATCH -t 14-00:00:00
 
-mpirun -n 12 ./program.x 
-#>& dump.out
+echo `which mpirun`
+mpirun -np 12 ./program.x >& dump.out
 

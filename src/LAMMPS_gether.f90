@@ -12,7 +12,8 @@ module LAMMPS_gether
 
      type (C_ptr) :: lmp		! for lammps communication
      integer :: nprocs_main, nprocs_lammps, comm_lammps
-     
+     integer :: icall = 0
+     integer :: ncall = 10000       ! number of calling between saving information
 
    integer, public :: me    ! for MPI
 
@@ -122,6 +123,11 @@ subroutine one_step_data (step)
 
     natoms = 0
     if (lammps_fl == 1)  then
+       if ((icall .eq. ncall) .and. (ncall .gt. 0)) then
+           icall = 0
+           call lammps_command(lmp,'write_restart restart_file1')
+       endif
+       icall = icall +1
 !     call lammps_command(lmp,'fix fff all ave/atom 1 1 '//trim(str_step)//' c_pe1')
 
        call lammps_command(lmp,'run '//trim(str_step)//' pre no post no')
