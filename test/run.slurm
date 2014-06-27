@@ -4,5 +4,5 @@
 #SBATCH -t 14-00:00:00
 
 echo `which mpirun`
-mpirun -np 12 ./program.x >& dump.out
+mpirun -np 12 ./program.x > /dev/null
 
