@@ -22,7 +22,7 @@ module LAMMPS_gether
    double precision, dimension(:), allocatable,public :: dbl_buf
    
    integer :: int_peratom = 4
-   integer :: dbl_peratom = 2
+   integer :: dbl_peratom = 8
    
      
    public ::  init_mpi_lammps, finalize_mpi_lammps, one_step_data
@@ -115,6 +115,10 @@ subroutine one_step_data (step)
     real (C_double), dimension(:), pointer :: comp1 => NULL()
     real (C_double), dimension(:), pointer :: comp2 => NULL()
     real (C_double), dimension(:), pointer :: comp3 => NULL()
+
+    real (C_double), dimension(:,:), pointer :: x => NULL()
+    real (C_double), dimension(:,:), pointer :: v => NULL()
+
     integer (C_int), dimension(:), pointer :: tag => NULL()
     integer (C_int), dimension(:), pointer :: type => NULL()
 
@@ -137,6 +141,9 @@ subroutine one_step_data (step)
        call lammps_extract_compute (comp1, lmp, 'clu5', 1, 1)
        call lammps_extract_compute (comp2, lmp, 'ke1', 1, 1)
        call lammps_extract_compute (comp3, lmp, 'pe1', 1, 1)
+call lammps_extract_atom (x, lmp, 'x')
+call lammps_extract_atom (v, lmp, 'v')
+
 !       call lammps_extract_compute (comp, lmp, 'clu', 1, 2) ! 2d array
        natoms = size(tag)
     endif
@@ -173,7 +180,14 @@ subroutine one_step_data (step)
 
           dbl_buf(j_dbl)= comp2(i)
           dbl_buf(j_dbl+1)=comp3(i)
-          j_dbl=j_dbl+2
+dbl_buf(j_dbl+2)=x(1,i)
+dbl_buf(j_dbl+3)=x(2,i)
+dbl_buf(j_dbl+4)=x(3,i)
+
+dbl_buf(j_dbl+5)=v(1,i)
+dbl_buf(j_dbl+6)=v(2,i)
+dbl_buf(j_dbl+7)=v(3,i)
+          j_dbl=j_dbl+dbl_peratom
         enddo
 
 !!send inforation to prosess with rank 0

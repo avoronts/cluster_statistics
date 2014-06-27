@@ -8,7 +8,7 @@ integer nstat,nclu,natom
 parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
 
 logical exists
-    real*4  statinum(nstat), para_esc(nstat),pott,kinn,kin_entre(n_entre),l_entre(n_entre)   !x(natom),y(natom),z(natom),
+    real*4  statinum(nstat), para_esc(nstat),pott,kinn,kin_entre(n_entre),l_entre(n_entre) ,  x(natom),y(natom),z(natom)
     integer eof /0/,typ(1:natom),cyp(natom),i1,i2,i3,k,Code,cur_rec ,iras,np(12),lstat(nstat)
     character,allocatable:: struu(:)
     character*5 s1
@@ -20,8 +20,7 @@ integer*8 n1, n2, iarg
     integer*4 i,j,jj,num_atom,nt, M, cur_num ,cur_clu,cur_clu7, numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
     integer*4  nmax /10000/,natraso /5/,sostav(500)
   
-    real*8 pot(1 :natom),kin(1: natom),l2
-
+    real*8 pot(1 :natom),kin(1: natom),l2, vx(1:natom),vy(1:natom),vz(1:natom)
     integer cluster(1:nclu,1:nstat),cluster_o(1:nclu,1:nstat)
     integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
         type hist
@@ -78,11 +77,19 @@ ikp=0
           
           kin(num_atom) = dbl_buf(jj)
           pot(num_atom) = dbl_buf(jj+1)
-          jj=jj+2
+	  x(num_atom) = dbl_buf(jj+2)
+	  y(num_atom) = dbl_buf(jj+3)
+	  z(num_atom) = dbl_buf(jj+4)
+	  vx(num_atom) = dbl_buf(jj+5)
+	  vy(num_atom) = dbl_buf(jj+6)
+	  vz(num_atom) = dbl_buf(jj+7)
+!          print  *, num_atom,x(num_atom),y(num_atom),z(num_atom),vx(num_atom),vy(num_atom),vz(num_atom)
+       
+          jj=jj+8
 
         enddo
         print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
-       
+
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
  write(sfile,'(i0)') nt/nmax
@@ -184,6 +191,16 @@ if (typ(num_atom) .ne.2) lcluster(i)=lcluster(i)+1
    
 do i=1,natom
 if (cyp(i) .ne. 10)   cyp(i)=0
+enddo
+do i=1,5000
+if (cyp(i) .eq. 10)  then
+write(i,'(i10,1x,120(i10,1x,8(F10.5,1x)))') nt, (cluster(ncluster(i),j),x(cluster(ncluster(i),j)),y(cluster(ncluster(i),j)), &
+z(cluster(ncluster(i),j)),vx(cluster(ncluster(i),j)),vy(cluster(ncluster(i),j)), &
+vz(cluster(ncluster(i),j)),kin(cluster(ncluster(i),j)),pot(cluster(ncluster(i),j)),j=1,mcluster(ncluster(i),1))
+do j=1,mcluster(ncluster(i),1)
+ cyp(cluster(ncluster(i),j))=0
+ enddo
+ endif
 enddo
 
         do j=1,5000  ! todos los atoms
@@ -464,13 +481,13 @@ endif
     i=1  ! сдох сам
     t=hist_dec(j)%ntime-hist_uni(j)%ntime
 
-    write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumj_all, nt, hist_dec(j)%ntime-hist_uni(j)%ntime, hist_uni(j)%narg, &
-    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,12),(lstat(i),i=1,15)
+    write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_all, nt, hist_dec(j)%ntime-hist_uni(j)%ntime, hist_uni(j)%narg, &
+    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20),(lstat(i),i=1,15)
     if (knumj_o.ne.1) then
- i=12  ! жизнь продукта прервана соединением
+ i=13  ! жизнь продукта прервана соединением
  i1=0
-    write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumj_o, nt, nt-hist_dec(j)%ntime, i1, &
-    i1, i1, (numj_all(i),i=1,12),(lstat(i),i=1,15)
+    write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_o, nt, nt-hist_dec(j)%ntime, i1, &
+    i1, i1, (numj_o(i),i=1,20),(lstat(i),i=1,15)
     endif
     t= hist_uni(j)%ntime
      do ik=1,knumj_all    ! para evitar la doble marka
@@ -486,8 +503,8 @@ endif
         else  !if (hist_dec(j).ntime .ne. 0) then then соединяется результат соединения
             if (hist_uni(j)%ntime .ne. 0) then
           i=12  ! 
-    write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumj_all, nt, nt-hist_uni(j)%ntime, hist_uni(j)%narg, &
-    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,12),(lstat(i),i=1,15)
+    write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_all, nt, nt-hist_uni(j)%ntime, hist_uni(j)%narg, &
+    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20),(lstat(i),i=1,15)
             endif
         endif
         endif   !if (ik==2) then
@@ -499,13 +516,13 @@ endif
     i=1  ! сдох сам
     t=hist_dec(itwo)%ntime-hist_uni(itwo)%ntime
 
-    write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumt_all,nt, hist_dec(itwo)%ntime-hist_uni(itwo)%ntime,  & 
-    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,12),(lstat(i),i=1,15)
+    write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_all,nt, hist_dec(itwo)%ntime-hist_uni(itwo)%ntime,  & 
+    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20),(lstat(i),i=1,15)
             if (knumt_o.ne.1) then
-            i=12
+            i=13
             i1=0
-            write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumt_o, nt, nt-hist_dec(itwo)%ntime, i1, &
-            i1, i1, (numt_all(i),i=1,12),(lstat(i),i=1,15)
+            write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_o, nt, nt-hist_dec(itwo)%ntime, i1, &
+            i1, i1, (numt_o(i),i=1,20),(lstat(i),i=1,15)
             endif
       t= hist_uni(itwo)%ntime
             do ik=1,knumt_all    ! para evitar la doble marka
@@ -521,8 +538,8 @@ endif
     else  !if  (hist_dec(itwo).ntime .ne. 0) thenсоединяется результат соединения
      if (hist_uni(itwo)%ntime .ne. 0) then
     i=12  ! 
-    write(44000,('(7(i7,1x),125(i5,1x))') ) i,knumt_all,nt, nt-hist_uni(itwo)%ntime,  & 
-    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,12),(lstat(i),i=1,15)
+    write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_all,nt, nt-hist_uni(itwo)%ntime,  & 
+    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20),(lstat(i),i=1,15)
     endif   
     endif      
     endif   !        if(ip==2) then
@@ -661,7 +678,7 @@ endif
 
         if (ikk==-4 .or. ipp==-4) then
             ikk=-1 !
-                 write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,15)
+            !     write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,15)
                    do i=1,knumj_o   !новый
                  hist_dec(numj_o(i))%ntime = nt
                  enddo
@@ -692,8 +709,8 @@ knumj_all=ip-1
  if(t<0) then
       ik=1
  endif
- write(44000,('(7(i7,1x),125(i5,1x))'))  i,knumj_all,nt, hist_dec(j)%ntime-hist_uni(j)%ntime, &
- hist_uni(j)%narg, hist_dec(j)%n1, hist_dec(j)%n2,(numj_all(ik),ik=1,12),(lstat(i),i=1,15)
+ write(44000,('(7(i12,1x),125(i5,1x))'))  i,knumj_all,nt, hist_dec(j)%ntime-hist_uni(j)%ntime, &
+ hist_uni(j)%narg, hist_dec(j)%n1, hist_dec(j)%n2,(numj_all(ik),ik=1,20),(lstat(i),i=1,15)
 
      
       ! para asegurar que la doble notacion no se ocurre  
