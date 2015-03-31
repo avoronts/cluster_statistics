@@ -7,7 +7,13 @@ program simple
 integer nstat,nclu,natom
 parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
 
-logical exists
+!this piece of text is devoted to statistical relations betw...
+integer*4 statist(300), npromediar /300/,delta/5/, delta_tau, nstatist /10/
+real*8 mpro,dpro,a
+integer curnum1 /2/
+!endik
+logical :: sexist
+
     real*4  statinum(nstat), para_esc(nstat),pott,kinn,kin_entre(n_entre),l_entre(n_entre) ,  x(natom),y(natom),z(natom)
     integer eof /0/,typ(1:natom),cyp(natom),i1,i2,i3,k,Code,cur_rec ,iras,np(12),lstat(nstat)
     character,allocatable:: struu(:)
@@ -22,7 +28,7 @@ integer*8 n1, n2, iarg
   
     real*8 pot(1 :natom),kin(1: natom),l2, vx(1:natom),vy(1:natom),vz(1:natom)
     integer cluster(1:nclu,1:nstat),cluster_o(1:nclu,1:nstat)
-    integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
+    !integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
         type hist
             integer*4 ntime  !время столкновения в н.у. ! или время разваливания
             integer*4 n1  !в состав кого входил атом J   ! на что распался
@@ -46,14 +52,17 @@ cluster_o =0          !numero del atom metallico
 nt=0
 !!me=1 ! DON'T forget to borrar it!
   ! do something
-          do i=1,5000
+ 	  do i=1,5000
           typ(i)=1
-          enddo
+       !   write(sfile,'(i0)') i
+       !   open(i,file=trim(sfile)//'.dat')
+          enddo    
       do i=5001,natom
       typ(i)=2
       enddo
  ikk=0
 ikp=0
+open(150,file='stat2.dat')
       
 										do while(.true.)
 ! entro y esta pensando
@@ -88,15 +97,76 @@ ikp=0
           jj=jj+8
 
         enddo
-        print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
+        !print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
+
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
- write(sfile,'(i0)') nt/nmax
+close(44000)
+
+         
+if((int(1.*(nt)/nstatist/nmax).eq. 1.*(nt)/nstatist/nmax) .and. nt .ne. 0) then
+!if((int(1.*(nt-1)/nstatist/nmax).eq. 1.*(nt-1)/nstatist/nmax) .and. nt .ne. 1) then
+statist=0 
+cyp=0
+a=0.
+ j=int(1.*nt/nmax)
+ do   ifile=j-nstatist + 1, j, 1
+
+ write(sfile,'(i0)') ifile
+ sfile=('r'//trim(sfile)//'.dat')
+   inquire (file=sfile,exist=sexist)
+   if(sexist) then
+    open(18,File=sfile,err=12) 
+
+        do while(.true.)    
+
+    read(18,('(2(i12,1x),a12,1x,a12,1x,3(i12,1x),125(i5,1x))'),end=11 ) ityp,n,sline,sline, n3, n1,n2, (numjt(ik), ik=1,12)
+    if(sline.ne.'*******') then
+    read(sline,'(i12)') delta_tau
+    endif
+
+          if   (curnum1==n .and. (ityp==1 .or. ityp==-1) .and. sline.ne.'*******') then    !ityp==1 .or. ityp==-1)
+             a=a+1.
+               do i=1,npromediar
+               if (delta_tau>=(i-1.)*delta .and. delta_tau < i*delta) then
+               statist(i)=statist(i)+1
+               exit
+               endif 
+               enddo 
+   
+          endif
+
+        enddo
+         11 continue
+
+
+         
+    endif  ! if(sexist) then
+    enddo   !from  do   ifile=j-nstatist + 1, j, 1
+              
+       12 continue
+Mpro=0.
+dpro=0.
+                do i=1,npromediar
+                Mpro=Mpro+statist(i)*(i*delta+delta/2.)/a
+                dpro=dpro+statist(i)*(i*delta+delta/2.)**2/a
+                enddo
+                dpro=dpro-mpro**2
+
+
+      ! write(14, '( 425(i5,1x))' ) (sargon(i),i=1,120)
+            write(150,('(i5,1x,3(F10.3, 1x), 425(i5,1x))')) ifile,a,mpro,dpro,(statist(i),i=1,npromediar)
+      
+
+endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
+
+
+ write(sfile,'(i0)') nt/nmax+1
  !open(41000,File='osc'//trim(sfile)//'.dat') 
  !open(15,File='t'//trim(sfile)//'.dat')      
  open(44000,File='r'//trim(sfile)//'.dat')      
-open(42000,File='pro_argon'//trim(sfile)//'.dat')
+!open(42000,File='pro_argon'//trim(sfile)//'.dat')
 ! open(43000,File='pro_argon_menos'//trim(sfile)//'.dat')      
 ! open(47000,File='prot'//trim(sfile)//'.dat')      
 endif
@@ -106,54 +176,17 @@ endif
     mcluster_o= mcluster
     ncluster_o=ncluster
     cluster_o=cluster
-      mcluster7_o= mcluster7
-    ncluster7_o=ncluster7
-    cluster7_o=cluster7          
-
+      
 mcluster=0
 mcluster7=0
 	ncluster=0
       cluster=0
-      cluster7=0
-      ncluster7=0
+      
       cur_clu=1
-      cur_clu7=1
-      ik=0
-cyp=0
 
-do num_atom=1,natoms
-    if (num_vecino4(num_atom).ne.num_atom ) then   
-            
-             if (Ncluster7(num_vecino4(num_atom))==0) then
-                    Ncluster7(num_vecino4(num_atom))=cur_clu7
-                   
-                    mcluster7(Ncluster7(num_vecino4(num_atom)),1)=1
-                    !if (typ(num_atom).ne. typ(num_vecino4(num_atom)) )  then 
-                    !mcluster(ncluster(num_vecino4(num_atom)),2)=2
-                    !endif
-                    cur_clu7=cur_clu7+1    !nuevo numero
-                   
-                    if (cluster7(ncluster7(num_vecino4(num_atom)),1) .eq. 0) cluster7(ncluster7(num_vecino4(num_atom)),1)=num_vecino4(num_atom)
-              endif
-                    Ncluster7(num_atom)= Ncluster7(num_vecino4(num_atom))
-                   
-                    i=ncluster7(num_vecino4(num_atom))
-                    
-                        if (mcluster7(Ncluster7(num_vecino4(num_atom)),1)<nstat) then
-
-                        mcluster7(Ncluster7(num_vecino4(num_atom)),1)=mcluster7(Ncluster7(num_vecino4(num_atom)),1)+1
-                        !if (typ(num_atom).ne. typ(num_vecino4(num_atom)) )  then 
-                        !mcluster(ncluster(num_vecino4(num_atom)),2)=2
-                        !else
-                        !mcluster(Ncluster(num_vecino4(num_atom)),2)=1 
-                        !endif
-
-                        cluster7(i,mcluster7(Ncluster7(num_vecino4(num_atom)),1))=num_atom
-                        endif
-    endif   
  ! el chiquito
-            
-         if (num_vecino5(num_atom).ne.num_atom ) then   !quitamos the clusteres of argon solo .and. num_vecino5(num_atom)<5000 
+ do num_atom=1,natoms
+   if (num_vecino5(num_atom).ne.num_atom ) then   !quitamos the clusteres of argon solo .and. num_vecino5(num_atom)<5000 
             
              if (Ncluster(num_vecino5(num_atom))==0) then
                     Ncluster(num_vecino5(num_atom))=cur_clu
@@ -166,7 +199,7 @@ do num_atom=1,natoms
                     if (cluster(ncluster(num_vecino5(num_atom)),1) .eq. 0) cluster(ncluster(num_vecino5(num_atom)),1)=num_vecino5(num_atom)
               endif
                     Ncluster(num_atom)= Ncluster(num_vecino5(num_atom))
-                    cyp(num_vecino5(num_atom))=10
+                  !  cyp(num_vecino5(num_atom))=10
                     i=ncluster(num_vecino5(num_atom))
 if (typ(num_atom) .ne.2) lcluster(i)=lcluster(i)+1
                 if (mcluster(Ncluster(num_vecino5(num_atom)),1)<nstat) then
@@ -183,27 +216,32 @@ if (typ(num_atom) .ne.2) lcluster(i)=lcluster(i)+1
         
           !if (Code <> 0)
         enddo    !!num_atom==1,m
-        lstat=0
-    do i=1,cur_clu-1   ! это набор кластеров на данный момент
-    lstat(lcluster(i))=lstat(lcluster(i))+1
-    enddo         
+           
 !write(112,('(40(i7,1x))')) (lstat(i),i=1,15)
-   
-do i=1,natom
-if (cyp(i) .ne. 10)   cyp(i)=0
-enddo
-do i=1,5000
+ !do i=1,natom
+!if (cyp(i) .ne. 10)   cyp(i)=0
+!enddo
+
+lstat(1)=0.
+do i=1,0
 if (cyp(i) .eq. 10)  then
+ if (i.eq.255 .or. i.eq.8 .or. i.eq.1651) then
 write(i,'(i10,1x,120(i10,1x,8(F10.5,1x)))') nt, (cluster(ncluster(i),j),x(cluster(ncluster(i),j)),y(cluster(ncluster(i),j)), &
 z(cluster(ncluster(i),j)),vx(cluster(ncluster(i),j)),vy(cluster(ncluster(i),j)), &
 vz(cluster(ncluster(i),j)),kin(cluster(ncluster(i),j)),pot(cluster(ncluster(i),j)),j=1,mcluster(ncluster(i),1))
 do j=1,mcluster(ncluster(i),1)
  cyp(cluster(ncluster(i),j))=0
  enddo
+endif
+endif
+if (ncluster(i).eq.0) then
+ lstat(1)=lstat(1)+1.
  endif
 enddo
 
-        do j=1,5000  ! todos los atoms
+
+cyp=0
+       do j=1,5000  ! todos los atoms
 
    
   numjt=0
@@ -222,92 +260,7 @@ knumt_t=0
         if (cyp(j).ne.1 ) then     !.and.cyp(j).ne.1
         !comparar las lineas
   
-    if (ncluster7(j) .ne. 0) then 
-                    ip=1
-                    do k=1,mcluster7(ncluster7(j),1)
-                    if (typ(cluster7(ncluster7(j),k)) .ne.2) then
-                    numjt(ip)=cluster7(ncluster7(j),k)         
-                    ip=ip+1
-                    endif
-                    enddo   
-                        else
-                        numjt(1)=j
-                        ip=2
-                        endif
-            knumjt=ip-1
-!в numjt лежат все атомы из cluser(ncluster7(j)), кроме атомов аргона
-        if (ncluster7_o(j) .ne. 0) then 
-                    ip=1
-                    do k=1,mcluster7_o(ncluster7_o(j),1)
-                    if (typ(cluster7_o(ncluster7_o(j),k)) .ne.2) then
-                    numj_o(ip)=cluster7_o(ncluster7_o(j),k)         
-                    ip=ip+1
-                    endif
-                    enddo   
-        else
-                        numj_o(1)=j
-                        ip=2
-        endif
-            knumj_o=ip-1 
-            !!!!!!они встретились с аргоном!!!\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-       if ( knumjt == knumj_o .and. mcluster7(ncluster7(j),1) > mcluster7_o(ncluster7_o(j),1) ) then   
-       !найти номер аргона, его кинет энергию до.
-
-         do i=1,mcluster7(ncluster7(j),1)   !новый
-      hist_uni(cluster7(ncluster7(j),i))%stat(1)=kin(cluster7(ncluster7(j),i))
-      hist_uni(cluster7(ncluster7(j),i))%stat(2)=pot(cluster7(ncluster7(j),i))
-         cyp( cluster7(ncluster7(j),i))=1  
-        enddo   
-
-            do i=1,knumjt
-            hist_uni(numjt(i))%narg= hist_uni(numjt(i))%narg+1
-            enddo
-            
-       endif     !они встретились  с аргоном!!!
-     !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! !они расстались с аргоном!!!\!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
-
-    if ( knumjt == knumj_o .and. knumjt.ne.1 .and. mcluster7(ncluster7(j),1) < mcluster7_o(ncluster7_o(j),1) ) then   !они расстались с аргоном!!!\
-en_arg=0.
-         do i=1,mcluster7_o(ncluster7_o(j),1)   !старый
-!if (typ(cluster7_o(ncluster7_o(j),i))==2) then
-         iexit=0
-           
-                 do ik=1, mcluster7(ncluster7(j),1)
-            if (cluster7_o(ncluster7_o(j),i)==cluster7(ncluster7(j),ik)) then 
-            iexit=iexit+1 ! encontramos
-            exit
-            endif
-                enddo
-    if (iexit == 0) then
-    en_arg= en_arg+pot(cluster7_o(ncluster7_o(j),i))+kin(cluster7_o(ncluster7_o(j),i))-(hist_uni(cluster7_o(ncluster7_o(j),i))%stat(1)+hist_uni(cluster7_o(ncluster7_o(j),i))%stat(2))
-    endif
-!endif               
-    
-            enddo
-                         if (ncluster(j) .ne. 0) then 
-                    ip=1
-                    do k=1,mcluster(ncluster(j),1)
-                    if (typ(cluster(ncluster(j),k)) .ne.2) then
-                           
-                    ip=ip+1
-                    endif
-                    enddo   
-                        else
-                        
-                        ip=2
-                        endif
-            knumjt=ip-1
-  if ( en_arg .ne. 0 .and. knumjt>1 )   write(42000,('(5(i10,1x),f10.7,1x,115(i7,1x))') ) nt,cluster7_o(ncluster7_o(j),1), knumjt,mcluster7_o(ncluster7_o(j),1),mcluster7(ncluster7(j),1),en_arg, (lstat(ip),ip=1,15)
-
-        do i=1,mcluster7_o(ncluster7_o(j),1)   
-        hist_uni(cluster7_o(ncluster7_o(j),i))%stat(1)=kin(cluster7_o(ncluster7_o(j),i))
-        hist_uni(cluster7_o(ncluster7_o(j),i))%stat(2)=pot(cluster7_o(ncluster7_o(j),i))
-        enddo 
-                    do i=1,mcluster7_o(ncluster7_o(j),1)   !новый
-                    cyp(cluster7_o(ncluster7_o(j),i))=1
-                    enddo                
-  endif     !они расстались с аргоном!!! 
-  
+ 
   numjt=0
   numj_o=0
     knumjt=0
@@ -392,6 +345,8 @@ en_arg=0.
                     numj_all(ip)=hist_uni(j).cluster(k)         
                     ip=ip+1
                     endif
+                    else
+                    exit
                     endif
                     enddo   
            else
@@ -427,6 +382,8 @@ endif
                     numt_all(ip)=hist_uni(itwo).cluster(k)         
                     ip=ip+1
                     endif
+                    else
+                    exit
                     endif
                     enddo   
            else
@@ -455,6 +412,7 @@ ip=0    !j никогда не был в кластере. это новая встреча
 endif 
 
 
+
 !!!!!!!
             if (ik==-4 .or. ip==-4) then
             ikk=1 !
@@ -480,14 +438,16 @@ endif
     !это результат развала j соединяется? да и запишем состоявшийся развал
     i=1  ! сдох сам
     t=hist_dec(j)%ntime-hist_uni(j)%ntime
-
+    if(t<0)then
+    i1=1
+    endif
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_all, nt, hist_dec(j)%ntime-hist_uni(j)%ntime, hist_uni(j)%narg, &
-    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20),(lstat(i),i=1,15)
+    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20)
     if (knumj_o.ne.1) then
- i=13  ! жизнь продукта прервана соединением
+ i=13  ! жизнь продукта прервана соединением, но он был развалившимся до этого
  i1=0
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_o, nt, nt-hist_dec(j)%ntime, i1, &
-    i1, i1, (numj_o(i),i=1,20),(lstat(i),i=1,15)
+    i1, i1, (numj_o(i),i=1,20)
     endif
     t= hist_uni(j)%ntime
      do ik=1,knumj_all    ! para evitar la doble marka
@@ -501,10 +461,10 @@ endif
        
         
         else  !if (hist_dec(j).ntime .ne. 0) then then соединяется результат соединения
-            if (hist_uni(j)%ntime .ne. 0) then
+            if (hist_uni(j)%ntime .ne. 0) then 
           i=12  ! 
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_all, nt, nt-hist_uni(j)%ntime, hist_uni(j)%narg, &
-    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20),(lstat(i),i=1,15)
+    hist_dec(j)%n1, hist_dec(j)%n2, (numj_all(i),i=1,20)
             endif
         endif
         endif   !if (ik==2) then
@@ -515,14 +475,17 @@ endif
     !это результат развала itwo соединяется? да и запишем состоявшийся развал
     i=1  ! сдох сам
     t=hist_dec(itwo)%ntime-hist_uni(itwo)%ntime
-
+     if(t<0)then
+    i1=1
+    endif
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_all,nt, hist_dec(itwo)%ntime-hist_uni(itwo)%ntime,  & 
-    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20),(lstat(i),i=1,15)
-            if (knumt_o.ne.1) then
+    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20)
+            if (knumt_o.ne.1) then   
+            ! но он был развалившимся до этого
             i=13
             i1=0
             write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_o, nt, nt-hist_dec(itwo)%ntime, i1, &
-            i1, i1, (numt_o(i),i=1,20),(lstat(i),i=1,15)
+            i1, i1, (numt_o(i),i=1,20)
             endif
       t= hist_uni(itwo)%ntime
             do ik=1,knumt_all    ! para evitar la doble marka
@@ -539,7 +502,7 @@ endif
      if (hist_uni(itwo)%ntime .ne. 0) then
     i=12  ! 
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_all,nt, nt-hist_uni(itwo)%ntime,  & 
-    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20),(lstat(i),i=1,15)
+    hist_uni(itwo)%narg, hist_dec(itwo)%n1, hist_dec(itwo)%n2,(numt_all(i),i=1,20)
     endif   
     endif      
     endif   !        if(ip==2) then
@@ -571,11 +534,11 @@ endif
             cyp(cluster(ncluster(j),ik))=1
             enddo
     
-            endif !from if (mcluster(ncluster(j),1) > mcluster_o(ncluster_o(j),1)) then   !они встретились!!!
+            endif ! if ( knumjt > knumj_o ) then    !они встретились!!!
     !!!!!
            
     if ( knumjt < knumj_o ) then   !claster_o разваливается?!!! запишем его, запишем, запишем!
- 
+
 ! выясним кто от него отделился ! нет защиты от колебаний!!!
   do i=1,knumj_o   !старый больной
         iexit=1
@@ -596,6 +559,7 @@ endif
                     do k=1,mcluster(ncluster(itwo),1)
                     if (typ(cluster(ncluster(itwo),k)) .ne.2) then
                     numt_t(ip)=cluster(ncluster(itwo),k)         
+                    ! тот, кто оторвался сейчас, в настоящем состоянии
                     ip=ip+1
                     endif
                     enddo   
@@ -613,9 +577,12 @@ endif
                     
                     if ( hist_dec(j)%cluster(k) .ne. 0  ) then
                     if (typ(hist_dec(j)%cluster(k)) .ne.2) then
-                    numj_all(ip)=hist_dec(j)%cluster(k)         
+                    numj_all(ip)=hist_dec(j)%cluster(k)    ! и кто уже удалялся от j      
                     ip=ip+1
+                    
                     endif
+                    else
+                    exit
                     endif
                     enddo   
          
@@ -624,7 +591,7 @@ knumj_all=ip-1
       ikk=0
          iexit=0
             do k=1,knumj_all  ! from what come off earlier
-                do ik=1,knumt_t
+                do ik=1,knumt_t   ! сравним тех, кто уже, с теми кто сейчас
             if (numt_t(ik)==numj_all(k)) then 
             iexit=iexit+1 ! encontramos
             exit
@@ -650,11 +617,13 @@ knumj_all=ip-1
                     numj_all(ik)=hist_dec(itwo).cluster(k)         
                     ik=ik+1
                     endif
+                    else
+                    exit
                     endif
                     enddo   
  
 knumj_all=ik-1
-      !!!!!!!la correcci?n es necesaria!       
+      !!!!!!!la correcciоn es necesaria!       
       ipp=0
          iexit=0
             do k=1,knumj_all  ! from what come off earlier
@@ -678,7 +647,7 @@ endif
 
         if (ikk==-4 .or. ipp==-4) then
             ikk=-1 !
-            !     write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,15)
+               !  write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,15)
                    do i=1,knumj_o   !новый
                  hist_dec(numj_o(i))%ntime = nt
                  enddo
@@ -697,6 +666,8 @@ endif
                     numj_all(ip)=hist_uni(j).cluster(k)         
                     ip=ip+1
                     endif
+                    else
+                    exit
                     endif
                     enddo   
            else
@@ -704,13 +675,11 @@ endif
                         ip=2
            endif
 knumj_all=ip-1 
- i=-1 
+ i=1 
  t=hist_dec(j)%ntime-hist_uni(j)%ntime
- if(t<0) then
-      ik=1
- endif
- write(44000,('(7(i12,1x),125(i5,1x))'))  i,knumj_all,nt, hist_dec(j)%ntime-hist_uni(j)%ntime, &
- hist_uni(j)%narg, hist_dec(j)%n1, hist_dec(j)%n2,(numj_all(ik),ik=1,20),(lstat(i),i=1,15)
+
+ write(44000,('(7(i12,1x),125(i5,1x))'))  i,knumj_all,nt, hist_dec(j) %ntime-hist_uni(j)%ntime, &
+ hist_uni(j)%narg, hist_dec(j)%n1, hist_dec(j)%n2,(numj_all(ik),ik=1,20)
 
      
       ! para asegurar que la doble notacion no se ocurre  
@@ -731,35 +700,41 @@ knumj_all=ip-1
                         ip=2
            endif
            knumt_o=ip-1
-           
-          if (hist_uni(itres)%ntime==t .and. knumt_o.ne.1) then
-                                   
-                do k=1,knumt_o
-                hist_uni( numt_o(k) )%cluster=0
+            p=hist_dec(j)%ntime
+           ! второй свободен как птица. узаконим это.
+           do k=1,knumt_o
+          if (hist_uni(numt_o(k))%ntime==t) then
+            hist_uni(numt_o(k))%ntime=0
+            hist_uni( numt_o(k) )%cluster=0
+            hist_uni( numt_o(k) )%n1=0
+            hist_uni( numt_o(k) )%n2=0  
+            hist_dec( numt_o(k) )%ntime=0
+            hist_dec( numt_o(k) )%cluster=0 
+                if (knumt_o.ne.1) then
                 do i=1,knumt_o
-                hist_uni( numt_o(k) )%cluster(i)=numt_o(i)! ошиба!!!!!
+                hist_uni( numt_o(i) )%cluster(i)=numt_o(i)! 
                 enddo
-                enddo 
-          endif    ! if (hist_uni(itwo)%ntime==t) then
-  p=hist_dec(j)%ntime
-      do k=1,knumj_all
-            if (hist_uni( numj_all(k) )%ntime==t) then
-            hist_uni( numj_all(k) )%ntime=p
-            hist_uni( numj_all(k) )%n1=0
-            hist_uni( numj_all(k) )%n2=0          
-            hist_dec( numj_all(k) )%ntime=0
-            hist_dec( numj_all(k) )%cluster=0  ! no estoy muy segura
-
-            endif
-       enddo   
-              do k=1,knumj_o
-         hist_uni( numj_o(k) )%cluster=0     
-             do i=1,knumj_o
-      hist_uni( numj_o(k) )%cluster(i)=numj_o(i)! ошиба!!!!!
+                hist_uni(numt_o(k))%ntime=p
+                endif
+           endif    
+           enddo 
+     !el primero es libre tambien
+      do k=1,knumj_o
+            if (hist_uni( numj_o(k) )%ntime==t) then
+            hist_uni( numj_o(k) )%ntime=p
+            hist_uni( numj_o(k) )%n1=0
+            hist_uni( numj_o(k) )%n2=0          
+            hist_dec( numj_o(k) )%ntime=0
+            hist_uni( numj_o(k) )%cluster=0  ! no estoy muy segura
+        do i=1,knumj_o
+      hist_uni( numj_o(k) )%cluster(i)=numj_o(i)! 
       enddo
+            endif
+         
+    
       enddo 
           
-    if (knumj_o==1)  hist_uni( numj_o(1) )%ntime=0   ! si esta solito!
+
       endif   !if( ik == 2 .or. ip==2) then    !распад расп
       
             if (mcluster(ncluster(j),1).ne.0) then 
@@ -816,24 +791,24 @@ knumj_all=ip-1
             cyp(cluster_o(ncluster_o(j),ik))=1
             enddo
             
-        endif !from (.not.(mc    
+        endif !if ( knumjt < knumj_o ) then   !claster_o разваливается?!!!   
 !!!!!!!           
     
     endif   ! if (cyp(j).ne.1
     
         enddo   !form j=1,5000
  
-!end of and now the ar-ar collisions will be counted
+!  .nd now the ar-ar collisions will be counted
 nt=nt+1
- !change it after the prove!
-
+ !change it after the pro!
+!  close(50000)   
+!!  close(1,status='delete')
 !      enddo    !from do ifile=1,nmax para leerlos
-										!	endif   !from if it is the first process
+			!	endif   !from if it is the first process							
    
 ! esta borrando  
 
- ! nttfile=nttfile+1
-	
+!  nttfile=nttfile+1	
 ! call lammps_command (lmp, 'run 50000 pre no post no')
 									    enddo    !from do while .true.
 
