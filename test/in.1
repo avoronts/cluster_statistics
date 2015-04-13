@@ -46,3 +46,6 @@ fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5
 fix		nve_fix all nve 
 
 #dump d1 all custom 5 dump.* id x y z vx vy vz
+
+thermo 100
+#run 1000000

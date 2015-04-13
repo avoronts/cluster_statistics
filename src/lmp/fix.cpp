@@ -58,6 +58,7 @@ Fix::Fix(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)
   create_attribute = 0;
   restart_pbc = 0;
   wd_header = wd_section = 0;
+  dynamic_group_allow = 0;
   cudable_comm = 0;
 
   scalar_flag = vector_flag = array_flag = 0;
@@ -70,6 +71,7 @@ Fix::Fix(LAMMPS *lmp, int narg, char **arg) : Pointers(lmp)
   // however, each fix that uses these values should explicitly set them
 
   nevery = 1;
+  global_freq = 1;
 
   maxvatom = 0;
   vatom = NULL;

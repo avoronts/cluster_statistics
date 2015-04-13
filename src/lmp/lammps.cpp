@@ -35,6 +35,7 @@
 #include "update.h"
 #include "neighbor.h"
 #include "comm.h"
+#include "comm_brick.h"
 #include "domain.h"
 #include "force.h"
 #include "modify.h"
@@ -67,6 +68,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
 
   screen = NULL;
   logfile = NULL;
+  infile = NULL;
 
   // parse input switches
 
@@ -75,9 +77,10 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   int logflag = 0;
   int partscreenflag = 0;
   int partlogflag = 0;
-  int cudaflag = -1;
-  int kokkosflag = -1;
+  int cudaflag = 0;
+  int kokkosflag = 0;
   int restartflag = 0;
+  int restartremapflag = 0;
   int citeflag = 1;
   int helpflag = 0;
 
@@ -186,6 +189,14 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
       restartflag = 1;
       rfile = arg[iarg+1];
       dfile = arg[iarg+2];
+      // check for restart remap flag
+      if (strcmp(dfile,"remap") == 0) {
+        if (iarg+4 > narg)
+          error->universe_all(FLERR,"Invalid command-line argument");
+        restartremapflag = 1;
+        dfile = arg[iarg+3];
+        iarg++;
+      }
       iarg += 3;
       // delimit any extra args for the write_data command
       wdfirst = iarg;
@@ -200,6 +211,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
       if (iarg+1 > narg)
         error->universe_all(FLERR,"Invalid command-line argument");
       helpflag = 1;
+      citeflag = 0;
       iarg += 1;
     } else error->universe_all(FLERR,"Invalid command-line argument");
   }
@@ -270,7 +282,6 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
     screen = universe->uscreen;
     logfile = universe->ulogfile;
     world = universe->uworld;
-    infile = NULL;
 
     if (universe->me == 0) {
       if (inflag == 0) infile = stdin;
@@ -421,23 +432,16 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   // error check on accelerator packages
 
   if (cudaflag == 1 && kokkosflag == 1) 
-    error->all(FLERR,"Cannot use -cuda on and -kokkos on");
+    error->all(FLERR,"Cannot use -cuda on and -kokkos on together");
 
   // create Cuda class if USER-CUDA installed, unless explicitly switched off
   // instantiation creates dummy Cuda class if USER-CUDA is not installed
 
-  if (cudaflag == 0) {
-    cuda = NULL;
-  } else if (cudaflag == 1) {
+  cuda = NULL;
+  if (cudaflag == 1) {
     cuda = new Cuda(this);
     if (!cuda->cuda_exists)
       error->all(FLERR,"Cannot use -cuda on without USER-CUDA installed");
-  } else {
-    cuda = new Cuda(this);
-    if (!cuda->cuda_exists) {
-      delete cuda;
-      cuda = NULL;
-    }
   }
 
   int me;
@@ -448,18 +452,11 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   // instantiation creates dummy Kokkos class if KOKKOS is not installed
   // add args between kkfirst and kklast to Kokkos instantiation
 
-  if (kokkosflag == 0) {
-    kokkos = NULL;
-  } else if (kokkosflag == 1) {
+  kokkos = NULL;
+  if (kokkosflag == 1) {
     kokkos = new KokkosLMP(this,kklast-kkfirst,&arg[kkfirst]);
     if (!kokkos->kokkos_exists)
       error->all(FLERR,"Cannot use -kokkos on without KOKKOS installed");
-  } else {
-    kokkos = new KokkosLMP(this,kklast-kkfirst,&arg[kkfirst]);
-    if (!kokkos->kokkos_exists) {
-      delete kokkos;
-      kokkos = NULL;
-    }
   }
 
   MPI_Comm_rank(world,&me);
@@ -493,6 +490,7 @@ LAMMPS::LAMMPS(int narg, char **arg, MPI_Comm communicator)
   if (restartflag) {
     char cmd[128];
     sprintf(cmd,"read_restart %s\n",rfile);
+    if (restartremapflag) strcat(cmd," remap\n");
     input->one(cmd);
     sprintf(cmd,"write_data %s",dfile);
     for (iarg = wdfirst; iarg < wdlast; iarg++)
@@ -518,12 +516,19 @@ LAMMPS::~LAMMPS()
   delete citeme;
 
   if (universe->nworlds == 1) {
+    if (screen && screen != stdout) fclose(screen);
     if (logfile) fclose(logfile);
+    logfile = NULL;
+    if (screen != stdout) screen = NULL;
   } else {
     if (screen && screen != stdout) fclose(screen);
     if (logfile) fclose(logfile);
     if (universe->ulogfile) fclose(universe->ulogfile);
+    logfile = NULL;
+    if (screen != stdout) screen = NULL;
   }
+
+  if (infile && infile != stdin) fclose(infile);
 
   if (world != universe->uworld) MPI_Comm_free(&world);
 
@@ -550,7 +555,7 @@ void LAMMPS::create()
 
   if (cuda) comm = new CommCuda(this);
   else if (kokkos) comm = new CommKokkos(this);
-  else comm = new Comm(this);
+  else comm = new CommBrick(this);
 
   if (cuda) neighbor = new NeighborCuda(this);
   else if (kokkos) neighbor = new NeighborKokkos(this);
@@ -632,7 +637,6 @@ void LAMMPS::destroy()
   delete force;
   delete group;
   delete output;
-
   delete modify;          // modify must come after output, force, update
                           //   since they delete fixes
   delete domain;          // domain must come after modify

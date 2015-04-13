@@ -47,7 +47,7 @@ cluster_o =0          !numero del atom metallico
 
 !--------------------------------------------------------
   CALL init_mpi_lammps('in.1') !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  
+
   
 nt=0
 !!me=1 ! DON'T forget to borrar it!
