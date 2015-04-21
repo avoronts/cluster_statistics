@@ -21,9 +21,11 @@ logical :: sexist
     character*6 s2,c2
     character*200 sfile 
     character*150 sline
-    integer*4 num_vecino4(1:natom),num_vecino5(1:natom),ncluster(1:natom),mcluster(0:nclu,2),ncluster_o(1:natom),mcluster_o(0:nclu,2),lcluster(0:nclu)  ! 1- только металл, 2 - есть аргон
+    integer*4 num_vecino4(1:natom),num_vecino5(1:natom),ncluster(1:natom),mcluster(0:nclu,2),ncluster_o(1:natom), &
+     mcluster_o(0:nclu,2),lcluster(0:nclu)  ! 1- только металл, 2 - есть аргон
 integer*8 n1, n2, iarg
-    integer*4 i,j,jj,num_atom,nt, M, cur_num ,cur_clu,cur_clu7, numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
+    integer*4 i,j,jj,num_atom,nt, M, cur_num ,cur_clu,cur_clu7, numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000), & 
+     numt_o(1000),numt_all(1000)
     integer*4  nmax /10000/,natraso /5/,sostav(500)
   
     real*8 pot(1 :natom),kin(1: natom),l2, vx(1:natom),vy(1:natom),vz(1:natom)
@@ -196,7 +198,8 @@ mcluster7=0
                     !mcluster(ncluster(num_vecino5(num_atom)),2)=2
                     !endif
                     cur_clu=cur_clu+1    !nuevo numero
-                    if (cluster(ncluster(num_vecino5(num_atom)),1) .eq. 0) cluster(ncluster(num_vecino5(num_atom)),1)=num_vecino5(num_atom)
+                    if (cluster(ncluster(num_vecino5(num_atom)),1) .eq. 0) & 
+                                        cluster(ncluster(num_vecino5(num_atom)),1)=num_vecino5(num_atom)
               endif
                     Ncluster(num_atom)= Ncluster(num_vecino5(num_atom))
                   !  cyp(num_vecino5(num_atom))=10
@@ -335,14 +338,14 @@ knumt_t=0
         knumt_o=ip-1
 
 !numj_all
- if (hist_uni(j).cluster(1) .ne. 0) then ! the biggest cluster with j
-            if (hist_uni(j).cluster(1) .ne. 0) then ! the biggest cluster with j
+ if (hist_uni(j)%cluster(1) .ne. 0) then             ! the biggest cluster with j
+            if (hist_uni(j)%cluster(1) .ne. 0) then  ! the biggest cluster with j
                     ip=1
                     do k=1,nstat
                     
-                    if ( hist_uni(j).cluster(k) .ne. 0  ) then
-                    if (typ(hist_uni(j).cluster(k)) .ne.2) then
-                    numj_all(ip)=hist_uni(j).cluster(k)         
+                    if ( hist_uni(j)%cluster(k) .ne. 0  ) then
+                    if (typ(hist_uni(j)%cluster(k)) .ne.2) then
+                    numj_all(ip)=hist_uni(j)%cluster(k)         
                     ip=ip+1
                     endif
                     else
@@ -373,13 +376,13 @@ knumj_all=ip-1
   else
 ik=0    !j никогда не был в кластере. это новая встреча
 endif  
- if (hist_uni(itwo).cluster(1) .ne. 0) then  !the biggest cluster with itwo
-            if (hist_uni(itwo).cluster(1) .ne. 0) then  !the biggest cluster with itwo
+ if (hist_uni(itwo)%cluster(1) .ne. 0) then  !the biggest cluster with itwo
+            if (hist_uni(itwo)%cluster(1) .ne. 0) then  !the biggest cluster with itwo
                     ip=1
                     do k=1,nstat
-                    if ( hist_uni(itwo).cluster(k) .ne. 0 ) then
-                    if (typ(hist_uni(itwo).cluster(k)) .ne.2) then
-                    numt_all(ip)=hist_uni(itwo).cluster(k)         
+                    if ( hist_uni(itwo)%cluster(k) .ne. 0 ) then
+                    if (typ(hist_uni(itwo)%cluster(k)) .ne.2) then
+                    numt_all(ip)=hist_uni(itwo)%cluster(k)         
                     ip=ip+1
                     endif
                     else
@@ -416,16 +419,16 @@ endif
 !!!!!!!
             if (ik==-4 .or. ip==-4) then
             ikk=1 !
-!                 write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,12)
+!                 write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j)%cluster(ip),ip=1,12)
 
 if( knumjt==knumj_all .or. knumjt==knumt_all) then   ! el cluster se recupero hasta el tama?o inicial
 do i=1,knumjt   !новый
-hist_dec(numjt(i)).cluster = 0
+hist_dec(numjt(i))%cluster = 0
 enddo
 endif
 
                    do i=1,knumjt   !новый
-                 hist_dec(numjt(i)).ntime = 0
+                 hist_dec(numjt(i))%ntime = 0
                  enddo
             else    !if (ik==-4 .or. ip==-4) then
    
@@ -434,7 +437,7 @@ endif
                if (ik==2) then
                ! escribimos la historia vieja de decay:
  
-        if (hist_dec(j).ntime .ne. 0) then
+        if (hist_dec(j)%ntime .ne. 0) then
     !это результат развала j соединяется? да и запишем состоявшийся развал
     i=1  ! сдох сам
     t=hist_dec(j)%ntime-hist_uni(j)%ntime
@@ -460,7 +463,7 @@ endif
      enddo
        
         
-        else  !if (hist_dec(j).ntime .ne. 0) then then соединяется результат соединения
+        else  !if (hist_dec(j)%ntime .ne. 0) then then соединяется результат соединения
             if (hist_uni(j)%ntime .ne. 0) then 
           i=12  ! 
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumj_all, nt, nt-hist_uni(j)%ntime, hist_uni(j)%narg, &
@@ -471,7 +474,7 @@ endif
      
         if(ip==2) then
         
-   if (hist_dec(itwo).ntime .ne. 0) then
+   if (hist_dec(itwo)%ntime .ne. 0) then
     !это результат развала itwo соединяется? да и запишем состоявшийся развал
     i=1  ! сдох сам
     t=hist_dec(itwo)%ntime-hist_uni(itwo)%ntime
@@ -498,7 +501,7 @@ endif
             enddo
        
         
-    else  !if  (hist_dec(itwo).ntime .ne. 0) thenсоединяется результат соединения
+    else  !if  (hist_dec(itwo)%ntime .ne. 0) thenсоединяется результат соединения
      if (hist_uni(itwo)%ntime .ne. 0) then
     i=12  ! 
     write(44000,('(7(i12,1x),125(i5,1x))') ) i,knumt_all,nt, nt-hist_uni(itwo)%ntime,  & 
@@ -571,7 +574,7 @@ endif
 
  ! a не случится ли так, что отрыв будет похож на старый?           
     if (hist_dec(j)%cluster(1) .ne. 0) then ! the biggest cluster from which j цше come off
-            !if (hist_dec(j).cluster(1) .ne. 0) then 
+            !if (hist_dec(j)%cluster(1) .ne. 0) then 
                     ip=1
                     do k=1,nstat
                     
@@ -612,9 +615,9 @@ knumj_all=ip-1
                     ik=1
                     do k=1,nstat
                     
-                    if ( hist_dec(itwo).cluster(k) .ne. 0  ) then
-                    if (typ(hist_dec(itwo).cluster(k)) .ne.2) then
-                    numj_all(ik)=hist_dec(itwo).cluster(k)         
+                    if ( hist_dec(itwo)%cluster(k) .ne. 0  ) then
+                    if (typ(hist_dec(itwo)%cluster(k)) .ne.2) then
+                    numj_all(ik)=hist_dec(itwo)%cluster(k)         
                     ik=ik+1
                     endif
                     else
@@ -647,7 +650,7 @@ endif
 
         if (ikk==-4 .or. ipp==-4) then
             ikk=-1 !
-               !  write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j).cluster(ip),ip=1,15)
+               !  write(41000,'(25(i5,1x))' ) ikk,nt,(hist_uni(j)%cluster(ip),ip=1,15)
                    do i=1,knumj_o   !новый
                  hist_dec(numj_o(i))%ntime = nt
                  enddo
@@ -656,14 +659,14 @@ endif
          
        if( ikk == 2 .and. ipp==2) then    !распад распада
         
-        if (hist_uni(j).cluster(1) .ne. 0) then ! the biggest cluster from which itwo цше come off
+        if (hist_uni(j)%cluster(1) .ne. 0) then ! the biggest cluster from which itwo цше come off
           
                            ip=1
                     do k=1,nstat
                     
-                    if ( hist_uni(j).cluster(k) .ne. 0  ) then
-                    if (typ(hist_uni(j).cluster(k)) .ne.2) then
-                    numj_all(ip)=hist_uni(j).cluster(k)         
+                    if ( hist_uni(j)%cluster(k) .ne. 0  ) then
+                    if (typ(hist_uni(j)%cluster(k)) .ne.2) then
+                    numj_all(ip)=hist_uni(j)%cluster(k)         
                     ip=ip+1
                     endif
                     else
