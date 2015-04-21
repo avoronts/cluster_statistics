@@ -497,7 +497,7 @@ contains !! Wrapper functions local to this module {{{1
       call lammps_extract_compute_arraysize (ptr, id, style, nr, nc)
       Cptr = lammps_extract_compute_Cptr (ptr, id, style, type)
       call C_F_pointer (Cptr, Ccompute, (/nr/))
-!      ! Note that the matrix is transposed, from Fortran's perspective
+      ! Note that the matrix is transposed, from Fortran's perspective
       call C_F_pointer (Ccompute(1), compute, (/nc, nr/))
    end subroutine lammps_extract_compute_dp2a
 
