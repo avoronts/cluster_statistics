@@ -17,7 +17,7 @@ program simple_test
     integer*4 num_atom, m, i,j,id,j_dbl
 
 !<<<<<<<<<<<<<<<< program start here !  >>>>>>>>>>>>>>>>>>
-    call init_mpi_lammps('in.1')
+    call init_mpi_lammps('test.in')
     if (me == 0) print *, '<<<<<<<<<<< mpi_init done >>>>>>>>>>>>>>>>>'
 
 !<<<<<<<<<<<<<<<< main loop >>>>>>>>>>>>>>>>>>
@@ -25,7 +25,7 @@ nloop = 25
 do iloop = 5,nloop,5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     call one_step_data(5)
-    if (me == 0) print  *, '<<<<<<<<<<< one step done >>>>>>>>>>>>>>>>>'
+!    if (me == 0) print  *, '<<<<<<<<<<< one step done >>>>>>>>>>>>>>>>>'
     
 !!!!!!!!!  !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!  
     if (me == 0) then
@@ -43,10 +43,10 @@ do iloop = 5,nloop,5
         do j=1,m
     	Read(50000,*) num_atom,typ(num_atom),num_vecino4(num_atom),num_vecino5(num_atom),kin(num_atom), pot(num_atom)
         enddo
-!        close(50000,status='delete')
-        close(50000)
+        close(50000,status='delete')
+!        close(50000)
     
-        print  *, '<<<<<<<<<<< read dump done  >>>>>>>>>>>>>>>>>'
+!        print  *, '<<<<<<<<<<< read dump done  >>>>>>>>>>>>>>>>>'
         
         j=1
         j_dbl=1
@@ -59,7 +59,7 @@ do iloop = 5,nloop,5
           
           if (abs(dbl_buf(j_dbl)-kin(id)) .gt. 1e-5) print  *, 'bad kin', id,dbl_buf(j_dbl),kin(id)
           if (abs(dbl_buf(j_dbl+1)- pot(id)) .gt. 1e-5) print  *, 'bad pot', id,dbl_buf(j_dbl+1),pot(id)
-          j_dbl=j_dbl+2
+          j_dbl=j_dbl+8
         enddo
         print  *, '<<<<<<<<<<< check done  >>>>>>>>>>>>>>>>>'
         
