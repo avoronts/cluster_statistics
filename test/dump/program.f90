@@ -164,16 +164,16 @@ endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
     cyp=0
 
 !!!!!!!!!!!!!!!!!!!!! check tart data. my code 21.05.2015 !!!!!!!!!!!!!!!!1
-!   write(sfile,'(i0)') nt*natraso
+   write(sfile,'(i0)') nt*natraso
 
-!   sfile=trim('check_in'//trim(sfile)//'.bin')
-!   write(*,*) sfile
-!   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+   sfile=trim('check_in'//trim(sfile)//'.bin')
+   write(*,*) sfile
+   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
 
-!   read(5050) typ_check
-!   read(5050) vecino_check
-!   read(5050) kin_check
-!   close(5050)
+   read(5050) typ_check
+   read(5050) vecino_check
+   read(5050) kin_check
+   close(5050,status='delete')
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
  write(sfile,'(i0)') nt*natraso
@@ -197,17 +197,17 @@ endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
 ! first we have to determine the kinetic energy        
  ! el chiquito
 !!!!!!!!!!!!!!!!!! my check !!!!!!!!!!!!!!
-!     if (typ(num_atom).ne.typ_check(num_atom)) then
-!        write(*,*) 'typ bad!!!',i,num_atom,typ(num_atom),typ_check(num_atom)
-!     endif
+     if (typ(num_atom).ne.typ_check(num_atom)) then
+        write(*,*) 'typ bad!!!',i,num_atom,typ(num_atom),typ_check(num_atom)
+     endif
 
-!     if (num_vecino(5).ne.vecino_check(num_atom)) then
-!        write(*,*) 'cluster bad!!!',i,num_atom,num_vecino(5),vecino_check(num_atom)
-!     endif
+     if (num_vecino(5).ne.vecino_check(num_atom)) then
+        write(*,*) 'cluster bad!!!',i,num_atom,num_vecino(5),vecino_check(num_atom)
+     endif
 
-!     if (abs(kin(num_atom)-kin_check(num_atom)).ge.0.0001) then
-!        write(*,*) 'energy bad!!!',i,num_atom,kin(num_atom),kin_check(num_atom),abs(kin(num_atom)-kin_check(num_atom))
-!     endif
+     if (abs(kin(num_atom)-kin_check(num_atom)).ge.0.0001) then
+        write(*,*) 'energy bad!!!',i,num_atom,kin(num_atom),kin_check(num_atom),abs(kin(num_atom)-kin_check(num_atom))
+     endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             
          pos_cluster = Ncluster(num_vecino(5))
@@ -248,20 +248,20 @@ endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 !!!!!!!!!!!!!!!!!!!!!check 2.  my code 21.05.2015 !!!!!!!!!!!!!!!!1
-! write(sfile,'(i0)') nt*natraso
-!
-! sfile=trim('check_out'//trim(sfile)//'.bin')
-!   write(*,*) sfile
-!   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+ write(sfile,'(i0)') nt*natraso
 
-!   read(5050) Ncluster_check
-!   read(5050) mcluster_check
-!   read(5050) lcluster_check
-!   read(5050) cluster_check
-!   close(5050)
-!   do i = 1,5000
-!     cl1 = Ncluster_check(i)
-!     cl2 = Ncluster(i)
+ sfile=trim('check_out'//trim(sfile)//'.bin')
+   write(*,*) sfile
+   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+
+   read(5050) Ncluster_check
+   read(5050) mcluster_check
+   read(5050) lcluster_check
+   read(5050) cluster_check
+   close(5050,status='delete')
+   do i = 1,5000
+     cl1 = Ncluster_check(i)
+     cl2 = Ncluster(i)
      
 !     if (cl1.ne.cl2) then
 !        write(*,*) 'bad!!!',i,cl1,cl2, mcluster_check(cl1,1), mcluster(cl2,1), &
@@ -269,12 +269,12 @@ endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
 !        (cluster(cl2,j),j=1,mcluster(cl2,1))
 !     endif
 
-!     if (mcluster_check(cl1,1).ne.mcluster(cl2,1)) then
-!        write(*,*) 'bad!!!',i,cl1,cl2, mcluster_check(cl1,1), mcluster(cl2,1), &
-!        (cluster_check(cl1,j),j=1,mcluster_check(cl1,1)), &
-!        (cluster(cl2,j),j=1,mcluster(cl2,1))
-!     endif
-!   enddo
+     if (mcluster_check(cl1,1).ne.mcluster(cl2,1)) then
+        write(*,*) 'bad!!!',i,cl1,cl2, mcluster_check(cl1,1), mcluster(cl2,1), &
+        (cluster_check(cl1,j),j=1,mcluster_check(cl1,1)), &
+        (cluster(cl2,j),j=1,mcluster(cl2,1))
+     endif
+   enddo
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
 

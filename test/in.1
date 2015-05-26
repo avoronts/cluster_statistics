@@ -10,7 +10,7 @@ units		metal
 atom_style	atomic
 boundary   p p p 
 # === generate crd =====
-read_data	crd_300_03_4
+read_data	crd_1500_01_1
 #=== masses, groups ===
 mass 1 63.546000 
 group Cu type 1 
@@ -40,6 +40,9 @@ compute  clu8 all cluster/atom 8.0
 compute  ke1 all ke/atom 
 compute  pe1 all pe/atom pair
 fix fff all ave/atom 5 1 5 c_pe1
+
+
+dump   clust_dump all custom 5 dump/dmp_clust*.txt id type c_clu5  c_ke1
 
 #=== temperature control ===
 fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5 

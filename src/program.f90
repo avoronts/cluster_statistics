@@ -66,7 +66,7 @@ nt=0
 ikp=0
 open(150,file='stat2.dat')
       
-										do while(.true.)
+										do kkk = 1,10000  !while(.true.)
 ! entro y esta pensando
 !										if (me.eq.1) then 
 
@@ -103,16 +103,16 @@ open(150,file='stat2.dat')
 
 
 !!!!!!!!!!!!!!!!!!!!! check 1. my code 21.05.2015 !!!!!!!!!!!!!!!!1
-!   write(sfile,'(i0)') (nt+1)*natraso
-!
-!   sfile=trim('check_in'//trim(sfile)//'.bin')
-!   write(*,*) sfile
-!   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
-!
-!   write(5050) typ 			!integer typ(1:natom)
-!   write(5050) num_vecino5		!integer*4 num_vecino5(1:natom)
-!   write(5050) kin			!real*8 kin(1: natom)
-!   close(5050)
+   write(sfile,'(i0)') (nt+1)*natraso
+
+   sfile=trim('dump/check_in'//trim(sfile)//'.bin')
+   write(*,*) sfile
+   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+
+   write(5050) typ 			!integer typ(1:natom)
+   write(5050) num_vecino5		!integer*4 num_vecino5(1:natom)
+   write(5050) kin			!real*8 kin(1: natom)
+   close(5050)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
 
@@ -244,16 +244,16 @@ mcluster7=0
 !enddo
 
 !!!!!!!!!!!!!!!!!!!!! check2. my code 21.05.2015 !!!!!!!!!!!!!!!!1
-!  write(sfile,'(i0)') (nt+1)*natraso
-!  sfile=trim('check_out'//trim(sfile)//'.bin')
-!  open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
-!
-!  write(5050) Ncluster		!    integer*4 ncluster(1:natom),mcluster(0:nclu,2),lcluster(0:nclu)
-!  write(5050) mcluster
-!  write(5050) lcluster
-!  write(5050) cluster		! integer cluster(1:nclu,1:nstat)
+  write(sfile,'(i0)') (nt+1)*natraso
+  sfile=trim('dump/check_out'//trim(sfile)//'.bin')
+  open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
 
-!  close(5050)
+  write(5050) Ncluster		!    integer*4 ncluster(1:natom),mcluster(0:nclu,2),lcluster(0:nclu)
+  write(5050) mcluster
+  write(5050) lcluster
+  write(5050) cluster		! integer cluster(1:nclu,1:nstat)
+
+  close(5050)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
 lstat(1)=0.
