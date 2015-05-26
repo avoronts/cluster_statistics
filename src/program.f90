@@ -22,7 +22,7 @@ logical :: sexist
     character*200 sfile 
     character*150 sline
     integer*4 num_vecino4(1:natom),num_vecino5(1:natom),ncluster(1:natom),mcluster(0:nclu,2),ncluster_o(1:natom), &
-     mcluster_o(0:nclu,2),lcluster(0:nclu)  ! 1- только металл, 2 - есть аргон
+     mcluster_o(0:nclu,2),lcluster(0:nclu), pos_cluster  ! 1- только металл, 2 - есть аргон
 integer*8 n1, n2, iarg
     integer*4 i,j,jj,num_atom,nt, M, cur_num ,cur_clu,cur_clu7, numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000), & 
      numt_o(1000),numt_all(1000)
@@ -100,6 +100,21 @@ open(150,file='stat2.dat')
 
         enddo
         !print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
+
+
+!!!!!!!!!!!!!!!!!!!!! check 1. my code 21.05.2015 !!!!!!!!!!!!!!!!1
+!   write(sfile,'(i0)') (nt+1)*natraso
+!
+!   sfile=trim('check_in'//trim(sfile)//'.bin')
+!   write(*,*) sfile
+!   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+!
+!   write(5050) typ 			!integer typ(1:natom)
+!   write(5050) num_vecino5		!integer*4 num_vecino5(1:natom)
+!   write(5050) kin			!real*8 kin(1: natom)
+!   close(5050)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -181,49 +196,65 @@ endif
       
 mcluster=0
 mcluster7=0
-	ncluster=0
+
+      ncluster=0
       cluster=0
-      
       cur_clu=1
 
  ! el chiquito
  do num_atom=1,natoms
+   pos_cluster = Ncluster(num_vecino5(num_atom))
+   
    if (num_vecino5(num_atom).ne.num_atom ) then   !quitamos the clusteres of argon solo .and. num_vecino5(num_atom)<5000 
             
-             if (Ncluster(num_vecino5(num_atom))==0) then
+             if (pos_cluster == 0) then
                     Ncluster(num_vecino5(num_atom))=cur_clu
-                    lcluster(cur_clu)=1
-                    mcluster(Ncluster(num_vecino5(num_atom)),1)=1
+                    pos_cluster = cur_clu
+                    lcluster(pos_cluster)=1
+                    mcluster(pos_cluster,1)=1
                     !if (typ(num_atom).ne. typ(num_vecino5(num_atom)) )  then 
                     !mcluster(ncluster(num_vecino5(num_atom)),2)=2
                     !endif
                     cur_clu=cur_clu+1    !nuevo numero
-                    if (cluster(ncluster(num_vecino5(num_atom)),1) .eq. 0) & 
-                                        cluster(ncluster(num_vecino5(num_atom)),1)=num_vecino5(num_atom)
-              endif
-                    Ncluster(num_atom)= Ncluster(num_vecino5(num_atom))
-                  !  cyp(num_vecino5(num_atom))=10
-                    i=ncluster(num_vecino5(num_atom))
-if (typ(num_atom) .ne.2) lcluster(i)=lcluster(i)+1
-                if (mcluster(Ncluster(num_vecino5(num_atom)),1)<nstat) then
-                mcluster(Ncluster(num_vecino5(num_atom)),1)=mcluster(Ncluster(num_vecino5(num_atom)),1)+1
+                    if (cluster(pos_cluster,1) .eq. 0) cluster(pos_cluster,1) = num_vecino5(num_atom)
+             endif
+             Ncluster(num_atom) = pos_cluster 
+           !  cyp(num_vecino5(num_atom))=10
+
+             if (typ(num_atom) .ne.2) lcluster(pos_cluster) = lcluster(pos_cluster)+1
+             
+             if (mcluster(pos_cluster,1)<nstat) then
+                mcluster(pos_cluster,1) = mcluster(pos_cluster,1)+1
                 !if (typ(num_atom).ne. typ(num_vecino5(num_atom)) )  then 
                 !mcluster(ncluster(num_vecino5(num_atom)),2)=2
                 !else
                 !mcluster(Ncluster(num_vecino5(num_atom)),2)=1 
                 !endif
-                cluster(i,mcluster(Ncluster(num_vecino5(num_atom)),1))=num_atom
-                endif
-          endif
+                cluster(pos_cluster,mcluster(pos_cluster,1)) = num_atom
+            endif
+    endif
  ! else 
         
           !if (Code <> 0)
-        enddo    !!num_atom==1,m
+ enddo    !!num_atom==1,m
            
 !write(112,('(40(i7,1x))')) (lstat(i),i=1,15)
  !do i=1,natom
 !if (cyp(i) .ne. 10)   cyp(i)=0
 !enddo
+
+!!!!!!!!!!!!!!!!!!!!! check2. my code 21.05.2015 !!!!!!!!!!!!!!!!1
+!  write(sfile,'(i0)') (nt+1)*natraso
+!  sfile=trim('check_out'//trim(sfile)//'.bin')
+!  open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
+!
+!  write(5050) Ncluster		!    integer*4 ncluster(1:natom),mcluster(0:nclu,2),lcluster(0:nclu)
+!  write(5050) mcluster
+!  write(5050) lcluster
+!  write(5050) cluster		! integer cluster(1:nclu,1:nstat)
+
+!  close(5050)
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
 lstat(1)=0.
 do i=1,0

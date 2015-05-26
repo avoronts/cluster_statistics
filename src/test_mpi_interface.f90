@@ -21,7 +21,7 @@ program simple_test
     if (me == 0) print *, '<<<<<<<<<<< mpi_init done >>>>>>>>>>>>>>>>>'
 
 !<<<<<<<<<<<<<<<< main loop >>>>>>>>>>>>>>>>>>
-nloop = 25
+nloop = 250000
 do iloop = 5,nloop,5
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
     call one_step_data(5)
