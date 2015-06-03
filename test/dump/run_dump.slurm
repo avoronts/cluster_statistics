@@ -1,5 +1,6 @@
 #!/bin/bash
 
+#SBATCH -p quick
 #SBATCH -N 1
 #SBATCH -t 14-00:00:00
 
