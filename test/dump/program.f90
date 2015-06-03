@@ -124,7 +124,7 @@ do ifile=1,nmax
    write(sfile,'(i0)') nt*natraso
    !sfile=trim('c:\lmp\lmp_win\dump_clust.')//trim(sfile)   !//'.txt')
    sfile=trim('dmp_clust'//trim(sfile)//'.txt')
-   write(*,*) sfile
+!   write(*,*) sfile
    open(50000,File=sfile,err=10)    !'//trim(sfile)//'
 
    do i =1,3
@@ -143,17 +143,17 @@ do ifile=1,nmax
       ! el chiquito
 
 !!!!!!!!!!!!!!!!!! my check !!!!!!!!!!!!!!
-      if (typ(num_atom).ne.typ_check(num_atom)) then
-        write(*,*) 'typ bad!!!',i,num_atom,typ(num_atom),typ_check(num_atom)
-      endif
-
-      if (num_vecino(5).ne.vecino_check(num_atom)) then
-        write(*,*) 'cluster bad!!!',i,num_atom,num_vecino(5),vecino_check(num_atom)
-      endif
-
-      if (abs(kin(num_atom)-kin_check(num_atom)).ge.0.0001) then
-        write(*,*) 'energy bad!!!',i,num_atom,kin(num_atom),kin_check(num_atom),abs(kin(num_atom)-kin_check(num_atom))
-      endif
+!      if (typ(num_atom).ne.typ_check(num_atom)) then
+!        write(*,*) 'typ bad!!!',i,num_atom,typ(num_atom),typ_check(num_atom)
+!      endif
+!
+!      if (num_vecino(5).ne.vecino_check(num_atom)) then
+!        write(*,*) 'cluster bad!!!',i,num_atom,num_vecino(5),vecino_check(num_atom)
+!      endif
+!
+!      if (abs(kin(num_atom)-kin_check(num_atom)).ge.0.0001) then
+!        write(*,*) 'energy bad!!!',i,num_atom,kin(num_atom),kin_check(num_atom),abs(kin(num_atom)-kin_check(num_atom))
+!      endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
             
        pos_cluster = Ncluster(num_vecino(5))
@@ -851,9 +851,7 @@ enddo   !form j=1,5000
 enddo    !from do ifile=1,nmax para leerlos
 !<<<<<<<<<<<<<<<<<< end if files circle >>>>>>>>>>>>>>>>>>>>>>>>
 
-  close(44000)
-  nttfile=nttfile+1   
-  ! esta borrando  
+nttfile=nttfile+1   
  
 enddo    !from do while .true.
 

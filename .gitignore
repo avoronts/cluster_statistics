@@ -6,3 +6,5 @@
 /etalon
 slurm-*
 log.*
+*.dat
+restart*
