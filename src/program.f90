@@ -39,7 +39,7 @@ parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
     integer cyp(natom)
 
     integer*4 i, j, jj, i1, k, nt, cur_clu 
-    integer t, p, n, itwo,ipp, itres, ityp, ikk,ip,ikp,iexit,ifile,ik,n1,n2,n3,nttfile 
+    integer t, p, n, itwo,ipp, itres, ityp, ikk,ip,iexit,ifile,ik,n1,n2,n3
         
     integer*4  nmax /10000/,natraso /5/,sostav(500)
     !integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
@@ -57,34 +57,30 @@ parameter(nstat=125,natom=25001,nclu=2500,n_entre=15)
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 !||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
 !>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-  mcluster_o(:,:) = 0        !numero de atoms en cada cluster
-  ncluster_o(:) = 0        !numero de cluster que mantiene este atom 
-  cluster_o(:,:) = 0          !numero del atom metallico
-
-  nttfile=1
 
 !--------------------------------------------------------
-  CALL init_mpi_lammps('in.1') !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-  
+CALL init_mpi_lammps('in.1') !!!!!!!!!!!!!!!!!!!!!!!!!!!!1
   
 nt=0
+mcluster_o(:,:) = 0        !numero de atoms en cada cluster
+ncluster_o(:) = 0        !numero de cluster que mantiene este atom 
+cluster_o(:,:) = 0          !numero del atom metallico
+
 !!me=1 ! DON'T forget to borrar it!
   ! do something
- 	  do i=1,5000
-          typ(i)=1
-       !   write(sfile,'(i0)') i
-       !   open(i,file=trim(sfile)//'.dat')
-          enddo    
-      do i=5001,natom
-      typ(i)=2
-      enddo
- ikk=0
-ikp=0
+do i=1,5000
+  typ(i)=1
+enddo    
+do i=5001,natom
+   typ(i)=2
+enddo
+
 open(150,file='stat2.dat')
-      
-										do while(.true.)
+open(44000,File='r1.dat')      
+
+do while(.true.)
 ! entro y esta pensando
-!										if (me.eq.1) then 
+!								if (me.eq.1) then 
 
 !!!!!!!!!!!!!!!!!!!!!!! read _data !!!!!!!!!!!!!!!!!!!!!!!!!
 !  do j=1,m
@@ -116,6 +112,7 @@ open(150,file='stat2.dat')
 
         enddo
         !print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
+        nt=nt+1
 
 
 !!!!!!!!!!!!!!!!!!!!! check 1. my code 21.05.2015 !!!!!!!!!!!!!!!!1
@@ -131,70 +128,69 @@ open(150,file='stat2.dat')
 !   close(5050)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
-
-
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
-close(44000)
+   close(44000)
 
-!<<<<<<<<<<<<<<< statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-if((int(1.*(nt)/nstatist/nmax).eq. 1.*(nt)/nstatist/nmax) .and. nt .ne. 0) then
-!if((int(1.*(nt-1)/nstatist/nmax).eq. 1.*(nt-1)/nstatist/nmax) .and. nt .ne. 1) then
+   !<<<<<<<<<<<<<<< statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+   if((int(1.*(nt)/nstatist/nmax).eq. 1.*(nt)/nstatist/nmax) .and. nt .ne. 0) then
+   !if((int(1.*(nt-1)/nstatist/nmax).eq. 1.*(nt-1)/nstatist/nmax) .and. nt .ne. 1) then
 
- statist=0 
- a=0.
- j=int(1.*nt/nmax)
- do   ifile=j-nstatist + 1, j, 1
-   write(sfile,'(i0)') ifile
-   sfile=('r'//trim(sfile)//'.dat')
-   inquire (file=sfile,exist=sexist)
-   if(sexist) then
-     open(18,File=sfile,err=12) 
+     statist=0 
+     a=0.
+     j=int(1.*nt/nmax)
+     do   ifile=j-nstatist + 1, j, 1
+       write(sfile,'(i0)') ifile
+       sfile=('r'//trim(sfile)//'.dat')
+       inquire (file=sfile,exist=sexist)
+       if(sexist) then
+         open(18,File=sfile,err=12) 
 
-     do while(.true.)    
+         do while(.true.)    
 
-       read(18,('(2(i12,1x),a12,1x,a12,1x,3(i12,1x),125(i5,1x))'),end=11 ) ityp,n,sline,sline, n3, n1,n2, (numjt(ik), ik=1,12)
-       if(sline.ne.'*******') then
-         read(sline,'(i12)') delta_tau
-       endif
+           read(18,('(2(i12,1x),a12,1x,a12,1x,3(i12,1x),125(i5,1x))'),end=11 ) ityp,n,sline,sline, n3, n1,n2, & 
+                     (numjt(ik), ik=1,12)
+           if(sline.ne.'*******') then
+               read(sline,'(i12)') delta_tau
+           endif
 
-      if   (curnum1==n .and. (ityp==1 .or. ityp==-1) .and. sline.ne.'*******') then    !ityp==1 .or. ityp==-1)
-        a=a+1.
-        do i=1,npromediar
-            if (delta_tau>=(i-1.)*delta .and. delta_tau < i*delta) then
-              statist(i)=statist(i)+1
-              exit
-            endif 
-        enddo 
-      endif
+           if (curnum1==n .and. (ityp==1 .or. ityp==-1) .and. sline.ne.'*******') then    !ityp==1 .or. ityp==-1)
+               a=a+1.
+               do i=1,npromediar
+                  if (delta_tau>=(i-1.)*delta .and. delta_tau < i*delta) then
+                     statist(i)=statist(i)+1
+                     exit
+                  endif 
+               enddo 
+           endif
 
-     enddo
+         enddo
      11  continue
-         
-    endif  ! if(sexist) then
- enddo   !from  do   ifile=j-nstatist + 1, j, 1
- 12 continue
+     
+       endif  ! if(sexist) then
+     enddo   !from  do   ifile=j-nstatist + 1, j, 1
+  12 continue
 
- Mpro=0.
- dpro=0.
- do i=1,npromediar
-    Mpro=Mpro+statist(i)*(i*delta+delta/2.)/a
-    dpro=dpro+statist(i)*(i*delta+delta/2.)**2/a
- enddo
- dpro=dpro-mpro**2
+     Mpro=0.
+     dpro=0.
+     do i=1,npromediar
+        Mpro=Mpro+statist(i)*(i*delta+delta/2.)/a
+        dpro=dpro+statist(i)*(i*delta+delta/2.)**2/a
+     enddo
+     dpro=dpro-mpro**2
       ! write(14, '( 425(i5,1x))' ) (sargon(i),i=1,120)
- write(150,('(i5,1x,3(F10.3, 1x), 425(i5,1x))')) ifile,a,mpro,dpro,(statist(i),i=1,npromediar)
+     write(150,('(i5,1x,3(F10.3, 1x), 425(i5,1x))')) ifile,a,mpro,dpro,(statist(i),i=1,npromediar)
 
-endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
+   endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<< end statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
- write(sfile,'(i0)') nt/nmax+1
- !open(41000,File='osc'//trim(sfile)//'.dat') 
- !open(15,File='t'//trim(sfile)//'.dat')      
- open(44000,File='r'//trim(sfile)//'.dat')      
-!open(42000,File='pro_argon'//trim(sfile)//'.dat')
-! open(43000,File='pro_argon_menos'//trim(sfile)//'.dat')      
-! open(47000,File='prot'//trim(sfile)//'.dat')      
+   write(sfile,'(i0)') int(nt/nmax)+1
+   !open(41000,File='osc'//trim(sfile)//'.dat') 
+   !open(15,File='t'//trim(sfile)//'.dat')      
+   open(44000,File='r'//trim(sfile)//'.dat')      
+   !open(42000,File='pro_argon'//trim(sfile)//'.dat')
+   ! open(43000,File='pro_argon_menos'//trim(sfile)//'.dat')      
+   ! open(47000,File='prot'//trim(sfile)//'.dat')      
 endif
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 !                do ifile=1,nmax
@@ -823,7 +819,6 @@ enddo   !form j=1,5000
 !      <<<<<< end of main circle
  
 !  .nd now the ar-ar collisions will be counted
-nt=nt+1
 !      enddo    !from do ifile=1,nmax para leerlos
 enddo    !from do while .true.
 

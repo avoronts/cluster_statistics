@@ -39,7 +39,7 @@ dump   clust_dump all custom 5 dmp_clust*.txt id type c_clu5  c_ke1
 #=== temperature control ===
 fix	t_Ar Ar temp/rescale 20 ${T_system} ${T_system} 20 0.5 
 fix		nve_fix all nve 
-run		${Run} 
+#run		${Run} 
 
 #=== final information ===
 #dump   last_dmp all custom 300 dump_last.lmp id type x y z vx vy vz

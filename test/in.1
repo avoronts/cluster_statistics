@@ -24,11 +24,11 @@ thermo	100
 #= interaction ===
 neighbor	5.0 bin
 neigh_modify	every 1 delay 0 check yes 
-write_restart restart_file0
-clear
+#write_restart restart_file0
+#clear
 
 #  ====== end of initial steps ============== 
-read_restart restart_file*
+#read_restart restart_file*
 pair_style hybrid lj/cut 10.  eam
 pair_coeff 1 1 eam Cu_u3.eam 
 pair_coeff 1 2 lj/cut 0.0123 3.76  
