@@ -67,7 +67,7 @@ CALL mpi_comm_size(MPI_COMM_WORLD,nprocs,ierr);
 CALL lammps_open('',MPI_COMM_WORLD,lmp)
 call lammps_file (lmp, 'in.1')
 !-------------------------------------------------
-open(150,file='stat.dat')
+!open(150,file='stat.dat')
 open(44000,File='r1.dat')      
 
 do i=1,5000
@@ -197,6 +197,7 @@ if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
    !<<<<<<<<<<<<<<< statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
    if((int(1.*(nt)/nstatist/nmax).eq. 1.*(nt)/nstatist/nmax) .and. nt .ne. 0) then
    !if((int(1.*(nt-1)/nstatist/nmax).eq. 1.*(nt-1)/nstatist/nmax) .and. nt .ne. 1) then
+     open(150,file='stat.dat',access='append')
 
      statist=0 
      a=0.
@@ -241,9 +242,10 @@ if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
      enddo
      dpro=dpro-mpro**2
       ! write(14, '( 425(i5,1x))' ) (sargon(i),i=1,120)
-     write(150,('(i5,1x,3(F10.3, 1x), 425(i5,1x))')) ifile,a,mpro,dpro,(statist(i),i=1,npromediar)
+     write(150,('(i5,1x,3(F10.3, 1x), 425(i5,1x))')) jj,a,mpro,dpro,(statist(i),i=1,npromediar)
 
    endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
+   close(150)
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<< end statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
    write(sfile,'(i0)') int(nt/nmax)+1
