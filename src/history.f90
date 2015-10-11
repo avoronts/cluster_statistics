@@ -11,8 +11,12 @@ module history
       integer :: fusion		!if grow == 1 - fusion, if grow == -1 - dissociation
    end type event
 
-   type(event), dimension(:), pointer :: all_events
+   type evptr
+       type(event), pointer :: p =>null()
+   end type evptr  
    
+   type(evptr), dimension(:), allocatable :: all_events
+ 
    private :: grow_all_events
 
 contains
@@ -44,7 +48,8 @@ subroutine add_fusion(new_p,new_cl,old_cl,time)
       call grow_all_events(100)
    endif
    n_events = n_events + 1
-   new_p => all_events(n_events)
+   allocate(all_events(n_events)%p)
+   new_p => all_events(n_events)%p
    
    if (j .gt. k) then 
       allocate(new_p%part1(j-1))
@@ -92,7 +97,8 @@ subroutine add_diss(new_p,new_cl,old_cl,time)
       call grow_all_events(100)
    endif
    n_events = n_events + 1
-   new_p => all_events(n_events)
+   allocate(all_events(n_events)%p)
+   new_p => all_events(n_events)%p
 
    if (j .gt. k) then 
       allocate(new_p%part1(j-1))
@@ -128,22 +134,22 @@ subroutine rm_event(ev)
    
    i = 1
    do while (i .le. n_events)
-      if ( associated(ev, all_events(i)) ) then
-         
+      if ( associated(ev, all_events(i)%p) ) then
 !         write(*,*) 'hist: ', ev%part1,ev%part2
-      
          write(*,*) 'hist: del event nimber', i
-         deallocate(ev%part1)
-         deallocate(ev%part2)
-
          n_events = n_events -1
          do while (i .le. n_events)
-            all_events(i) = all_events(i+1)
+            all_events(i)%p => all_events(i+1)%p
             i = i+1
          enddo
-         deallocate(all_events(n_events+1)%part1)
-         deallocate(all_events(n_events+1)%part2)
-!         deallocate(ev)
+         deallocate(all_events(n_events+1)%p%part1)
+         deallocate(all_events(n_events+1)%p%part2)
+         deallocate(all_events(n_events+1)%p)
+         nullify(all_events(n_events+1)%p)
+         
+         deallocate(ev%part1)
+         deallocate(ev%part2)
+         deallocate(ev)
          nullify(ev)
          return
       endif 
@@ -213,13 +219,15 @@ end function loop1
 subroutine grow_all_events(n)
 
    implicit none
-   integer n
-   type(event),  dimension(:), allocatable :: buf
+   integer n,i
+   type(evptr),  dimension(:), allocatable :: buf
   
    write(*,*) 'hist: start grow all_events array', max_events, n_events
-   if (associated(all_events)) then 
+   if (allocated(all_events)) then 
       allocate(buf(size(all_events(:))))
-      buf(:) = all_events(:)
+      do i = 1, size(all_events(:))
+        buf(i)%p => all_events(i)%p
+      enddo
       deallocate(all_events)
    endif
    
@@ -227,7 +235,9 @@ subroutine grow_all_events(n)
    allocate(all_events(max_events))
      
    if (allocated(buf)) then 
-      all_events(:) =  buf(:)
+      do i = 1, size(buf(:))
+        all_events(i)%p => buf(i)%p 
+      enddo
       deallocate(buf)
    endif
    write(*,*) 'hist: finalize grow all_events array', max_events, n_events

@@ -47,10 +47,6 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     integer*4  nmax /10000/,natraso /5/,sostav(500)
     !integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
 
-    type evptr
-       type(event), pointer :: p =>null()
-    end type evptr
-
     type (evptr), dimension(max_atom,5) ::  hist
     type (event), pointer :: nev
      
@@ -236,6 +232,8 @@ endif
  enddo    !!num_atom==1,m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
+if(int(1.*nt/1000).eq. 1.*nt/1000) write(*,*) 'stat: time = ', nt
+
 cyp(:) = 0
 do j=1,5000  ! todos los atoms
 
@@ -253,10 +251,11 @@ do j=1,5000  ! todos los atoms
           iat = cluster_o(ncluster_o(j),i)
           if (associated(hist(iat,5)%p)) then
              write(*,*) 'stat: diss: write event to file!!!'
-             write(40,*) 'stat: diss:',hist(j,5)%p%part1,'+',hist(j,5)%p%part2,'==', hist(j,5)%p%time, hist(j,5)%p%fusion
-             
-             call rm_event(hist(j,5)%p)
-              
+             open(40,file='hist.dat',access='append')
+             write (40,*) 'diss: time = ', hist(j,5)%p%time,', (',hist(iat,5)%p%n1,'+',hist(iat,5)%p%n2,')', & 
+                hist(iat,5)%p%part1(:),  hist(iat,5)%p%part2(:)
+             close(40)
+             call rm_event(hist(iat,5)%p)
           endif  
           hist(iat,5)%p => hist(iat,4)%p
           hist(iat,4)%p => hist(iat,3)%p
@@ -297,6 +296,11 @@ do j=1,5000  ! todos los atoms
                  iat = cluster(ncluster(j),i)
                  if (associated(hist(iat,5)%p)) then
                     write (*,*) 'stat: fusion: write event to file!!!'
+                    open(40,file='hist.dat',access='append')
+                    write (40,*) 'fusion: time = ', hist(j,5)%p%time,', (',hist(iat,5)%p%n1,'+',hist(iat,5)%p%n2,')', & 
+                        hist(iat,5)%p%part1(:),  hist(iat,5)%p%part2(:)
+                    close(40)
+                    call rm_event(hist(iat,5)%p)
                  endif  
                  hist(iat,5)%p => hist(iat,4)%p
                  hist(iat,4)%p => hist(iat,3)%p
