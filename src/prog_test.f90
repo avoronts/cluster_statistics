@@ -3,6 +3,8 @@ program simple
 
   use LAMMPS_gether
   use history
+  use events
+  use sort
   
   implicit none
   
@@ -33,7 +35,7 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
 ! this data for cluster storage
     integer*4 ncluster(max_atom),ncluster_o(max_atom),mcluster(0:nclu), & 
               mcluster_o(0:nclu)  ! 1- только металл, 2 - есть аргон
-    integer cluster(0:nclu,1:nstat+1),cluster_o(0:nclu,1:nstat+1)
+    integer cluster(1:nstat+1,0:nclu),cluster_o(1:nstat+1,0:nclu)
 
 
 !    integer*4 numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
@@ -47,7 +49,6 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     integer*4  nmax /10000/,natraso /5/,sostav(500)
     !integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
 
-    type (evptr), dimension(max_atom,5) ::  hist
     type (event), pointer :: nev
      
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
@@ -68,6 +69,8 @@ enddo
 do i=5001,max_atom
    typ(i)=2
 enddo
+
+call create_history(max_atom)
 
 open(150,file='stat2.dat')
 open(44000,File='r1.dat')      
@@ -218,18 +221,23 @@ endif
             if (typ(num_vecino5(iat)) .eq. 1) then   ! add base atom
                Ncluster(num_vecino5(iat)) = icl
                mcluster(icl) = mcluster(icl)+1
-               cluster(icl,mcluster(icl)) = num_vecino5(iat)
+               cluster(mcluster(icl),icl) = num_vecino5(iat)
             endif
      endif
 
      Ncluster(iat) = icl
      if (mcluster(icl) .lt. nstat) then
         mcluster(icl) = mcluster(icl)+1
-        cluster(icl,mcluster(icl)) = iat
+        cluster(mcluster(icl),icl) = iat
      endif
     ! write(*,*) iat, num_vecino5(iat),icl,Ncluster(iat),mcluster(icl)
      
  enddo    !!num_atom==1,m
+
+
+do icl = 1, cur_clu
+   call QsortC(cluster(1:mcluster(icl),icl))
+enddo    !!num_atom==1,m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 if(int(1.*nt/1000).eq. 1.*nt/1000) write(*,*) 'stat: time = ', nt
@@ -244,24 +252,12 @@ do j=1,5000  ! todos los atoms
   
   if (mcluster(ncluster(j)) < mcluster_o(ncluster_o(j))) then 
 !        write(*,*) 'stat: ! add dissociation'
-        if (ncluster(j) .eq. 0) cluster(ncluster(j),1) = j  ! мономер
-        
-        call add_diss(nev,cluster(ncluster(j),:), cluster_o(ncluster_o(j),:), nt)
+        if (ncluster(j) .eq. 0) cluster(1,ncluster(j)) = j  ! мономер
+        call add_diss(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
+        call update_history(nev)
+
         do i=1,mcluster_o(ncluster_o(j))
-          iat = cluster_o(ncluster_o(j),i)
-          if (associated(hist(iat,5)%p)) then
-             write(*,*) 'stat: diss: write event to file!!!'
-             open(40,file='hist.dat',access='append')
-             write (40,*) 'diss: time = ', hist(j,5)%p%time,', (',hist(iat,5)%p%n1,'+',hist(iat,5)%p%n2,')', & 
-                hist(iat,5)%p%part1(:),  hist(iat,5)%p%part2(:)
-             close(40)
-             call rm_event(hist(iat,5)%p)
-          endif  
-          hist(iat,5)%p => hist(iat,4)%p
-          hist(iat,4)%p => hist(iat,3)%p
-          hist(iat,3)%p => hist(iat,2)%p
-          hist(iat,2)%p => hist(iat,1)%p
-          hist(iat,1)%p => nev
+          iat = cluster_o(i,ncluster_o(j))
           cyp(iat) = 1
         enddo
         
@@ -269,50 +265,17 @@ do j=1,5000  ! todos los atoms
 
   if (mcluster(ncluster(j)) > mcluster_o(ncluster_o(j))) then 
 !        write(*,*) 'stat: Add fusion',j
-        if (ncluster_o(j) .eq. 0) cluster_o(ncluster_o(j),1) = j  ! мономер
-        call add_fusion(nev,cluster(ncluster(j),:), cluster_o(ncluster_o(j),:), nt)
+        if (ncluster_o(j) .eq. 0) cluster_o(1,ncluster_o(j)) = j  ! мономер
+        call add_fusion(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
     
 !------ check for loops ---------
-        if (loop0(nev,hist(j,1)%p) == 1) then 
-           write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
-           call rm_event(hist(j,1)%p)
-           do i = 1, mcluster(ncluster(j))
-              iat = cluster(ncluster(j),i)
-              hist(iat,1)%p => hist(iat,2)%p
-              hist(iat,2)%p => hist(iat,3)%p
-              hist(iat,3)%p => hist(iat,4)%p
-              hist(iat,4)%p => hist(iat,5)%p
-              hist(iat,5)%p => NULL()
-           enddo
-        else
-           iat1 = nev%part1(1)
-           iat2 = nev%part2(1)
-           if (loop1(nev,hist(iat1,1)%p,hist(iat2,1)%p) == 1) then
-               write(*,*) 'stat: Complex loop. reconstruction of history'
-           
-           else
-              write(*,*) 'stat: No loops. Write new history'
-              do i = 1,mcluster(ncluster(j))
-                 iat = cluster(ncluster(j),i)
-                 if (associated(hist(iat,5)%p)) then
-                    write (*,*) 'stat: fusion: write event to file!!!'
-                    open(40,file='hist.dat',access='append')
-                    write (40,*) 'fusion: time = ', hist(j,5)%p%time,', (',hist(iat,5)%p%n1,'+',hist(iat,5)%p%n2,')', & 
-                        hist(iat,5)%p%part1(:),  hist(iat,5)%p%part2(:)
-                    close(40)
-                    call rm_event(hist(iat,5)%p)
-                 endif  
-                 hist(iat,5)%p => hist(iat,4)%p
-                 hist(iat,4)%p => hist(iat,3)%p
-                 hist(iat,3)%p => hist(iat,2)%p
-                 hist(iat,2)%p => hist(iat,1)%p
-                 hist(iat,1)%p => nev
-              enddo
-           endif
+        if (loop_hist(nev) == 0) then 
+!           write(*,*) 'stat: No loops. Update history'
+           call update_history(nev)
         endif
  
         do i = 1,mcluster(ncluster(j))
-           iat = cluster(ncluster(j),i)
+           iat = cluster(i,ncluster(j))
            cyp(iat) = 1
         enddo
   endif

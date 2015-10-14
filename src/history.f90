@@ -1,252 +1,252 @@
 module history
 
+   use events
+ 
    implicit none
 
-   integer, private :: max_events = 0, n_events = 0
-
-   type event 
-      integer, dimension(:), allocatable :: part1,  part2   ! части кластера
-      integer :: n1, n2		!размеры частей n1 >= n2
-      integer :: time		!время столкновения или время разваливания
-      integer :: fusion		!if grow == 1 - fusion, if grow == -1 - dissociation
-   end type event
-
-   type evptr
-       type(event), pointer :: p =>null()
-   end type evptr  
-   
-   type(evptr), dimension(:), allocatable :: all_events
- 
-   private :: grow_all_events
+   integer, private :: max_hist = 5
+   type (evptr), dimension(:,:), allocatable ::  hist
 
 contains
 !--------------------------------------------
+subroutine create_history(nat)
+
+  implicit none 
+  integer nat
+
+  allocate(hist(nat,max_hist))
+
+end subroutine create_history
+
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-subroutine add_fusion(new_p,new_cl,old_cl,time)
+subroutine update_history(ev)
 
    implicit none
-   integer :: new_cl(*),old_cl(*), time
-   integer :: old1_cl(1000), i,j,k
-   type(event), pointer :: new_p
-    
-!   write(*,*) 'hist: add fusion procedure', time, new_cl(1:5),old_cl(1:5)
-   i = 1
-   j = 1
-   k = 1
-   do while (new_cl(i) > 0)
-     if (new_cl(i) == old_cl(j)) then 
-       j = j + 1
-     else
-       old1_cl(k) = new_cl(i)
-       k = k + 1
-     endif
-     i = i + 1
-   enddo
-    write(*,*) 'hist: fusion: size1 = ', j-1, old_cl(1:j-1),' size2 = ', k-1, old1_cl(1:k-1)
-
-   if (n_events+1 .ge. max_events) then 
-      call grow_all_events(100)
-   endif
-   n_events = n_events + 1
-   allocate(all_events(n_events)%p)
-   new_p => all_events(n_events)%p
+   integer :: i,n1,iat
+   type(event), pointer :: ev 
    
-   if (j .gt. k) then 
-      allocate(new_p%part1(j-1))
-      allocate(new_p%part2(k-1))
-      new_p%part1(:) = old_cl(1:j-1)
-      new_p%part2(:) = old1_cl(1:k-1)
-      new_p%n1 = j-1
-      new_p%n2 = k-1
-   else
-      allocate(new_p%part1(k-1))
-      allocate(new_p%part2(j-1))
-      new_p%part2(:) = old_cl(1:j-1)
-      new_p%part1(:) = old1_cl(1:k-1)
-      new_p%n2 = j-1
-      new_p%n1 = k-1
-   endif
-   new_p%time = time
-   new_p%fusion = 1
+   if (.not. associated(ev)) return
+!    write(*,*) 'hist: Update history' 
 
-end subroutine add_fusion
-!----------------------------------------------
-subroutine add_diss(new_p,new_cl,old_cl,time)
+   do i = 1, ev%n1
+     iat = ev%part1(i)
+     call write_hist(hist(iat,max_hist)%p)
+!   call rm_old_history(iat,max_hist)
 
-   implicit none
-   integer :: new_cl(*),old_cl(*), time
-   integer :: new1_cl(1000), i,j,k
-   type(event), pointer :: new_p
-!   write(*,*) 'hist: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
+     n1 = max_hist
+     do while (n1 .gt. 1) 
+        hist(iat,n1)%p => hist(iat,n1-1)%p
+        n1 =n1-1
+     enddo
+     hist(iat,n1)%p => ev
+   enddo 
 
-   i = 1
-   j = 1
-   k = 1
-   do while (old_cl(i) > 0)
-     if (old_cl(i) == new_cl(j)) then 
-       j = j + 1
-     else
-       new1_cl(k) = old_cl(i)
-       k = k + 1
-     endif
-     i = i + 1
-   enddo
-   write(*,*) 'hist: dissociation:  size1 = ', j-1, new_cl(1:j-1),' size2 = ', k-1, new1_cl(1:k-1)
-   
-   if (n_events+1 .ge. max_events) then 
-      call grow_all_events(100)
-   endif
-   n_events = n_events + 1
-   allocate(all_events(n_events)%p)
-   new_p => all_events(n_events)%p
+   do i = 1, ev%n2
+     iat = ev%part2(i)
+     call write_hist(hist(iat,max_hist)%p)
+!   call rm_old_history(iat,max_hist)
 
-   if (j .gt. k) then 
-      allocate(new_p%part1(j-1))
-      allocate(new_p%part2(k-1))
-      new_p%part1(:) = new_cl(1:j-1)
-      new_p%part2(:) = new1_cl(1:k-1)
-      new_p%n1 = j-1
-      new_p%n2 = k-1
-   else
-      allocate(new_p%part1(k-1))
-      allocate(new_p%part2(j-1))
-      new_p%part2(:) = new_cl(1:j-1)
-      new_p%part1(:) = new1_cl(1:k-1)
-      new_p%n2 = j-1
-      new_p%n1 = k-1
-   endif
-   new_p%time = time
-   new_p%fusion = -1 
-   
-end subroutine add_diss
-!----------------------------------------------
-subroutine rm_event(ev)
+     n1 = max_hist
+     do while (n1 .gt. 1) 
+        hist(iat,n1)%p => hist(iat,n1-1)%p
+        n1 =n1-1
+     enddo
+     hist(iat,n1)%p => ev
+   enddo 
+
+end subroutine update_history
+
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+subroutine rm_from_history(ev)
 
    implicit none
    type(event), pointer :: ev
-   integer :: i
+   integer :: jat,i,iat,n,n1
    
-   if (.not. associated(ev)) then
-     write(*,*) 'hist: warning try delete bad event' 
-     return
-   endif
-   write(*,*) 'hist: remove event',n_events
+   if (.not. associated(ev)) return
+   write(*,*) 'hist: remove history ',ev%fusion, ev%n1, ev%n2
+!   ev => hist(jat,n)%p
    
-   i = 1
-   do while (i .le. n_events)
-      if ( associated(ev, all_events(i)%p) ) then
-!         write(*,*) 'hist: ', ev%part1,ev%part2
-         write(*,*) 'hist: del event nimber', i
-         n_events = n_events -1
-         do while (i .le. n_events)
-            all_events(i)%p => all_events(i+1)%p
-            i = i+1
-         enddo
-         deallocate(all_events(n_events+1)%p%part1)
-         deallocate(all_events(n_events+1)%p%part2)
-         deallocate(all_events(n_events+1)%p)
-         nullify(all_events(n_events+1)%p)
-         
-         deallocate(ev%part1)
-         deallocate(ev%part2)
-         deallocate(ev)
-         nullify(ev)
-         return
-      endif 
-      i = i+1
-   enddo
-   write(*,*) 'hist: bad pointer. No event'
+   do i = 1, ev%n1
+     iat = ev%part1(i)
+     n1 = 1
+     do while (n1 .le. max_hist) 
+        if (associated(ev,hist(iat,n1)%p)) then
+          do while (n1 .lt. max_hist) 
+            hist(iat,n1)%p => hist(iat,n1+1)%p
+            n1 =n1+1
+          enddo
+          hist(iat,n1)%p => NULL()
+          exit
+        endif
+        n1 = n1+1
+     enddo
+   enddo 
 
-end subroutine rm_event
-!----------------------------------------------
-
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-integer function loop0(ev1,ev2)
-
-   implicit none
-   type(event), pointer :: ev1,ev2
-   integer :: i
-!   write(*,*) 'hist: Check for zero loop'
-
-   loop0 = 0
-   if (.not. associated(ev1)) return
-   if (.not. associated(ev2)) return
-   if (ev1%part1(1) .eq. ev2%part1(1)) then
-        if (size(ev1%part1(:)) .ne. size(ev2%part1(:))) return
-        do i=1, size(ev1%part1(:))
-          if (ev1%part1(i) .ne. ev2%part1(i)) return
-        enddo 
-        
-        if (size(ev1%part2(:)) .ne. size(ev2%part2(:))) return
-        do i=1, size(ev1%part2(:))
-          if (ev1%part2(i) .ne. ev2%part2(i)) return
-        enddo 
-    else if (ev1%part1(1) .eq. ev2%part2(1)) then
-        if (size(ev1%part1(:)) .ne. size(ev2%part2(:))) return
-        do i=1, size(ev1%part1(:))
-          if (ev1%part1(i) .ne. ev2%part2(i)) return
-        enddo 
-        
-        if (size(ev1%part2(:)) .ne. size(ev2%part1(:))) return
-        do i=1, size(ev1%part2(:))
-          if (ev1%part2(i) .ne. ev2%part1(i)) return
-        enddo 
-    
-    else 
-        return
-    endif
-    loop0 = 1
-end function loop0
+   do i = 1, ev%n2
+     iat = ev%part2(i)
+     n1 = 1
+     do while (n1 .le. max_hist) 
+        if (associated(ev,hist(iat,n1)%p)) then
+          do while (n1 .lt. max_hist) 
+            hist(iat,n1)%p => hist(iat,n1+1)%p
+            n1 =n1+1
+          enddo
+          hist(iat,n1)%p => NULL()
+          exit
+        endif
+        n1 = n1+1
+     enddo
+   enddo 
+   
+   call rm_event(ev)
+  write(*,*) 'hist: done remove history '
+!
+end subroutine rm_from_history
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-integer function loop1(ev1,ev2,ev3)
+recursive subroutine rm_old_history(ev)
 
    implicit none
-   type(event), pointer :: ev1,ev2,ev3
-   integer :: i
+   type(event), pointer :: ev
+   integer :: jat,i,iat,n,n1
+   
+   if (.not. associated(hist(jat,n)%p)) return
+   write(*,*) 'hist: remove history ',n,' atom ',jat
+   
+   do i = 1, ev%n1
+     iat = ev%part1(i)
+     n1 = 1
+     do while (n1 .le. max_hist) 
+        if (hist(iat,n1)%p%time .lt. ev%time) then
+          call rm_old_history(hist(iat,n1)%p)
+        endif
+     enddo
+   enddo 
+
+   do i = 1, ev%n2
+     iat = ev%part2(i)
+     n1 = 1
+     do while (n1 .le. max_hist) 
+        if (hist(iat,n1)%p%time .lt. ev%time) then
+          call rm_old_history(hist(iat,n1)%p)
+        endif
+     enddo
+   enddo 
+
+   call rm_from_history(hist(iat,n1)%p)
+
+end subroutine rm_old_history
+
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>
+integer function loop_hist(nev)
+
+   implicit none
+   integer :: iat1,iat2
+   type(event), pointer :: nev
+!   write(*,*) 'hist: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
+        iat1 = nev%part1(1)
+        iat2 = nev%part2(1)
+        
+!------ check for loops ---------
+        loop_hist = 1
+        if ( associated(hist(iat1,1)%p,hist(iat2,1)%p) ) then 
+           write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
+           call rm_from_history(hist(iat1,1)%p)
+           return
+        endif
+        
+        if ( loop1(nev) .eq. 1 ) then 
+           write(*,*) 'stat: Complex loop. reconstruction of history'
+!           call rm_history(j,1)
+          ! call rm_from_history(ev)
+           return
+        endif
+
+        loop_hist = 0
+        return 
+ 
+end function loop_hist
+
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+integer function loop1(ev)
+
+   implicit none
+   type(event), pointer :: ev,nev
+   integer :: i,iat1,iat2,jat1,jat2
+   integer, allocatable :: all(:), part(:)
 
    loop1 = 0
-   if (.not. associated(ev1)) return
-   if (.not. associated(ev2)) return
-   if (.not. associated(ev3)) return
+   if (.not. associated(ev)) return
 
+   iat1 = ev%part1(1)
+   iat2 = ev%part2(1)
+   
+   if (.not. associated(hist(iat1,1)%p) ) return
+   if (.not. associated(hist(iat2,1)%p) ) return
+   if (.not. associated(hist(iat1,2)%p) ) return
+   if (.not. associated(hist(iat2,2)%p) ) return
+   return
+   
+   loop1 = 1
+   if ( associated(hist(iat1,1)%p,hist(iat2,2)%p) ) then 
+       write(*,*) 'stat: Complex loop. reconstruction of history'
+!       all(:) =  hist(iat2,1)%p%part1(:) + hist(iat2,1)%p%part2(:)+ ev%part1(:)
+       if (hist(iat2,1)%p%fusion .eq. 1) then
+!          part(:) = hist(iat1,1)%p%part1(:) + hist(iat1,1)%p%part2(:)
+          call add_fusion(nev,all(:), part(:), hist(iat2,1)%p%time)
+          call rm_from_history(hist(iat1,1)%p)
+          call rm_from_history(hist(iat2,1)%p)
+          call update_hist(nev)
+          return
+       else
+!          part(:) = ev%p%part1(:) + ev%p%part2(:)
+          call add_diss(nev,part(:), all(:), hist(iat2,1)%p%time)
+          call rm_from_history(hist(iat1,1)%p)
+          call rm_from_history(hist(iat2,1)%p)
+          call update_hist(nev)
+          return
+       endif
+   endif
+   
+   if ( associated(hist(iat1,2)%p,hist(iat2,1)%p) ) then 
+       write(*,*) 'stat: Complex loop. reconstruction of history'
+!       all(:) =  hist(iat1,1)%p%part1(:) + hist(iat1,1)%p%part2(:)+ ev%part2(:)
+       if (hist(iat1,1)%p%fusion .eq. 1) then
+!          part(:) = hist(iat2,1)%p%part1(:) + hist(iat2,1)%p%part2(:)
+          call add_fusion(nev,all(:), part(:), hist(iat1,1)%p%time)
+          call rm_from_history(hist(iat1,1)%p)
+          call rm_from_history(hist(iat2,1)%p)
+          call update_hist(nev)
+          return
+       else
+!          part(:) = ev%p%part1(:) + ev%p%part2(:)
+          call add_diss(nev,part(:), all(:), hist(iat1,1)%p%time)
+          call rm_from_history(hist(iat1,1)%p)
+          call rm_from_history(hist(iat2,1)%p)
+          call update_hist(nev)
+          return
+       endif
+   endif
+   
+   loop1 = 0
+   return
 
 end function loop1
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-
-subroutine grow_all_events(n)
-
-   implicit none
-   integer n,i
-   type(evptr),  dimension(:), allocatable :: buf
-  
-   write(*,*) 'hist: start grow all_events array', max_events, n_events
-   if (allocated(all_events)) then 
-      allocate(buf(size(all_events(:))))
-      do i = 1, size(all_events(:))
-        buf(i)%p => all_events(i)%p
-      enddo
-      deallocate(all_events)
-   endif
+!=================================
+subroutine  write_hist(p)
    
-   max_events = max_events + n
-   allocate(all_events(max_events))
-     
-   if (allocated(buf)) then 
-      do i = 1, size(buf(:))
-        all_events(i)%p => buf(i)%p 
-      enddo
-      deallocate(buf)
-   endif
-   write(*,*) 'hist: finalize grow all_events array', max_events, n_events
+   implicit none
+   type(event), pointer :: p
 
-end subroutine grow_all_events
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111
-
-
-
-
+    if (.not. associated(p)) return
+    write(*,*) 'hist: write event to file!!!'
+    open(40,file='hist.dat',access='append')
+    write (40,*) 'time = ',p%time,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%part1(:),  p%part2(:)
+    close(40)
+       
+end subroutine write_hist
+!<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 
 end module history
