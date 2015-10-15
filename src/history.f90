@@ -40,7 +40,7 @@ subroutine update_history(ev)
         n1 =n1-1
      enddo
      hist(iat,n1)%p => ev
-     hist(iat,2)%p%t_next = ev%time
+     if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = ev%time
    enddo 
 
 end subroutine update_history
