@@ -15,6 +15,7 @@ subroutine create_history(nat)
   integer nat
 
   allocate(hist(nat,max_hist))
+  
 
 end subroutine create_history
 
@@ -28,8 +29,8 @@ subroutine update_history(ev)
    if (.not. associated(ev)) return
 !    write(*,*) 'hist: Update history' 
 
-   do i = 1, ev%n1
-     iat = ev%part1(i)
+   do i = 1, size(ev%atoms)
+     iat = ev%atoms(i)
      call write_hist(hist(iat,max_hist)%p)
 !   call rm_old_history(iat,max_hist)
 
@@ -39,53 +40,27 @@ subroutine update_history(ev)
         n1 =n1-1
      enddo
      hist(iat,n1)%p => ev
-   enddo 
-
-   do i = 1, ev%n2
-     iat = ev%part2(i)
-     call write_hist(hist(iat,max_hist)%p)
-!   call rm_old_history(iat,max_hist)
-
-     n1 = max_hist
-     do while (n1 .gt. 1) 
-        hist(iat,n1)%p => hist(iat,n1-1)%p
-        n1 =n1-1
-     enddo
-     hist(iat,n1)%p => ev
+     hist(iat,2)%p%t_next = ev%time
    enddo 
 
 end subroutine update_history
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-subroutine rm_from_history(ev)
+subroutine rm_from_history(ev_target)
 
    implicit none
-   type(event), pointer :: ev
-   integer :: jat,i,iat,n,n1
-   
-   if (.not. associated(ev)) return
-   write(*,*) 'hist: remove history ',ev%fusion, ev%n1, ev%n2
-!   ev => hist(jat,n)%p
-   
-   do i = 1, ev%n1
-     iat = ev%part1(i)
-     n1 = 1
-     do while (n1 .le. max_hist) 
-        if (associated(ev,hist(iat,n1)%p)) then
-          do while (n1 .lt. max_hist) 
-            hist(iat,n1)%p => hist(iat,n1+1)%p
-            n1 =n1+1
-          enddo
-          hist(iat,n1)%p => NULL()
-          exit
-        endif
-        n1 = n1+1
-     enddo
-   enddo 
+   type(event), pointer :: ev,ev_target
+   integer :: jat,i,iat,n,n1,j
 
-   do i = 1, ev%n2
-     iat = ev%part2(i)
+   ev => ev_target      ! make copy
+   if (.not. associated(ev)) return
+   write(*,*) 'hist: remove history ',ev%fusion, ev%n1, ev%n2, ev%atoms(:),ev_number(ev)
+!   ev => hist(jat,n)%p
+
+   do i = 1, ev%n1 + ev%n2
+     iat = ev%atoms(i)
      n1 = 1
+!     write(*,*) 'hist: remove history from atom ',iat,(ev_number(hist(iat,j)%p),j=1,5)
      do while (n1 .le. max_hist) 
         if (associated(ev,hist(iat,n1)%p)) then
           do while (n1 .lt. max_hist) 
@@ -98,9 +73,8 @@ subroutine rm_from_history(ev)
         n1 = n1+1
      enddo
    enddo 
-   
    call rm_event(ev)
-  write(*,*) 'hist: done remove history '
+!  write(*,*) 'hist: done remove history '
 !
 end subroutine rm_from_history
 
@@ -108,24 +82,14 @@ end subroutine rm_from_history
 recursive subroutine rm_old_history(ev)
 
    implicit none
-   type(event), pointer :: ev
+   type(event), pointer, intent(in) :: ev
    integer :: jat,i,iat,n,n1
    
    if (.not. associated(hist(jat,n)%p)) return
    write(*,*) 'hist: remove history ',n,' atom ',jat
    
-   do i = 1, ev%n1
-     iat = ev%part1(i)
-     n1 = 1
-     do while (n1 .le. max_hist) 
-        if (hist(iat,n1)%p%time .lt. ev%time) then
-          call rm_old_history(hist(iat,n1)%p)
-        endif
-     enddo
-   enddo 
-
-   do i = 1, ev%n2
-     iat = ev%part2(i)
+   do i = 1, ev%n1+ev%n2
+     iat = ev%atoms(i)
      n1 = 1
      do while (n1 .le. max_hist) 
         if (hist(iat,n1)%p%time .lt. ev%time) then
@@ -139,34 +103,36 @@ recursive subroutine rm_old_history(ev)
 end subroutine rm_old_history
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>
-integer function loop_hist(nev)
+subroutine update_history_check(ev_target)
 
-   implicit none
-   integer :: iat1,iat2
-   type(event), pointer :: nev
+    implicit none
+    integer :: iat1,iat2
+    type(event), pointer :: ev,ev_target
+
+    ev => ev_target
 !   write(*,*) 'hist: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
-        iat1 = nev%part1(1)
-        iat2 = nev%part2(1)
-        
+    iat1 = ev%atoms(1)
+    iat2 = ev%atoms(ev%n1+1)
+
 !------ check for loops ---------
-        loop_hist = 1
-        if ( associated(hist(iat1,1)%p,hist(iat2,1)%p) ) then 
-           write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
-           call rm_from_history(hist(iat1,1)%p)
-           return
-        endif
-        
-        if ( loop1(nev) .eq. 1 ) then 
-           write(*,*) 'stat: Complex loop. reconstruction of history'
+    if ( associated(hist(iat1,1)%p,hist(iat2,1)%p) ) then 
+       write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
+        !   ev => hist(iat1,1)%p
+       call rm_from_history(hist(iat1,1)%p)
+       call rm_event(ev)
+       return
+    endif
+
+    if ( loop1(ev) .eq. 1 ) then 
+       write(*,*) 'stat: Complex loop. reconstruction of history'
 !           call rm_history(j,1)
           ! call rm_from_history(ev)
-           return
-        endif
+       return
+    endif
 
-        loop_hist = 0
-        return 
- 
-end function loop_hist
+    call update_history(ev)
+
+end subroutine update_history_check
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 integer function loop1(ev)
@@ -179,8 +145,8 @@ integer function loop1(ev)
    loop1 = 0
    if (.not. associated(ev)) return
 
-   iat1 = ev%part1(1)
-   iat2 = ev%part2(1)
+   iat1 = ev%atoms(1)
+   iat2 = ev%atoms(ev%n1+1)
    
    if (.not. associated(hist(iat1,1)%p) ) return
    if (.not. associated(hist(iat2,1)%p) ) return
@@ -243,7 +209,7 @@ subroutine  write_hist(p)
     if (.not. associated(p)) return
     write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,*) 'time = ',p%time,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%part1(:),  p%part2(:)
+    write (40,*) 'time = ',p%time,p%t_next,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%atoms(:)
     close(40)
        
 end subroutine write_hist

@@ -267,13 +267,8 @@ do j=1,5000  ! todos los atoms
 !        write(*,*) 'stat: Add fusion',j
         if (ncluster_o(j) .eq. 0) cluster_o(1,ncluster_o(j)) = j  ! мономер
         call add_fusion(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
-    
-!------ check for loops ---------
-        if (loop_hist(nev) == 0) then 
-!           write(*,*) 'stat: No loops. Update history'
-           call update_history(nev)
-        endif
- 
+        call update_history_check(nev) !------ check for loops and update history---------
+
         do i = 1,mcluster(ncluster(j))
            iat = cluster(i,ncluster(j))
            cyp(iat) = 1
