@@ -109,7 +109,7 @@ subroutine one_step_data (step)
     integer :: step 
     integer :: status(MPI_STATUS_SIZE)
     integer :: i,j,j_int, j_dbl,iproc,ierr
-    character*15 :: str_step
+    character*20 :: str_step
 
     real (C_double), dimension(:), pointer :: comp => NULL()
     real (C_double), dimension(:), pointer :: comp1 => NULL()

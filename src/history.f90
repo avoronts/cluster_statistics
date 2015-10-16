@@ -54,7 +54,7 @@ subroutine rm_from_history(ev_target)
 
    ev => ev_target      ! make copy
    if (.not. associated(ev)) return
-   write(*,*) 'hist: remove history ',ev%fusion, ev%n1, ev%n2, ev%atoms(:),ev_number(ev)
+!   write(*,*) 'hist: remove history ',ev%fusion, ev%n1, ev%n2, ev%atoms(:),ev_number(ev)
 !   ev => hist(jat,n)%p
 
    do i = 1, ev%n1 + ev%n2
@@ -207,10 +207,13 @@ subroutine  write_hist(p)
    type(event), pointer :: p
 
     if (.not. associated(p)) return
-    write(*,*) 'hist: write event to file!!!'
+    if (p%written .eq. 1) return
+    
+!    write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,*) 'time = ',p%time,p%t_next,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%atoms(:)
+    write (40,*) 'time = ',p%time,p%t_next-p%time,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%atoms(:)
     close(40)
+    p%written = 1
        
 end subroutine write_hist
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>

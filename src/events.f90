@@ -10,6 +10,7 @@ module events
       integer :: time = 0		!время столкновения или время разваливания
       integer :: fusion = 0		!if grow == 1 - fusion, if grow == -1 - dissociation
       integer :: t_next = 0
+      integer :: written = 0
       integer, dimension(:), pointer :: atoms => null()   ! все атомы      
    end type event
 
