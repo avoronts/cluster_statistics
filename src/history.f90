@@ -171,14 +171,14 @@ integer function loop1(ev)
 
    loop1 = 1
    write(*,*) 'hist: Complex loop. reconstruction of history',add_atoms
-   read(*,*)
+!   read(*,*)
 
    n1 = true_ev%n1
    n2 = true_ev%n2
    n0 = size(add_atoms(:))
    write(*,*) 'hist: size',n1, n2, n0
 
-   allocate( buf1(n1), buf2(n2),)
+   allocate( buf1(n1), buf2(n2))
    buf1(:) = true_ev%atoms(1:n1)
    buf2(:) = true_ev%atoms(n1+1 : )
    write(*,*) 'hist: buf',buf1(:),buf2(:)
@@ -233,13 +233,14 @@ subroutine  write_hist(p)
    
    implicit none
    type(event), pointer :: p
-
+       
     if (.not. associated(p)) return
     if (p%written .eq. 1) return
     
 !    write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,*) 'time = ',p%time,p%t_next-p%time,', status =', p%fusion,' (',p%n1,'+',p%n2,')',p%atoms(:)
+    write (40,'(i10, i7, i2, "(",i4," + ", i4,")")') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2
+    write (40,*) p%atoms(:)
     close(40)
     p%written = 1
        

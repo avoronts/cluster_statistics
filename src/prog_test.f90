@@ -72,8 +72,8 @@ enddo
 
 call create_history(max_atom)
 
-open(150,file='stat2.dat')
-open(44000,File='r1.dat')      
+!open(150,file='stat2.dat')
+!open(44000,File='r1.dat')      
 
 do while(.true.)
 ! entro y esta pensando

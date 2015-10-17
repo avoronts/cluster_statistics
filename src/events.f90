@@ -91,7 +91,7 @@ subroutine add_diss(new_p,new_cl,old_cl,time)
    enddo
 
    if (n_events+1 .ge. max_events) then 
-      call grow_all_events(100)
+      call grow_all_events(1000)
    endif
    
    n_events = n_events + 1
@@ -211,4 +211,4 @@ subroutine grow_all_events(n)
 end subroutine grow_all_events
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111
 
-end module events
+end module events	
