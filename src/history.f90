@@ -124,9 +124,6 @@ subroutine update_history_check(ev_target)
     endif
 
     if ( loop1(ev) .eq. 1 ) then 
-       write(*,*) 'stat: Complex loop. reconstruction of history'
-!           call rm_history(j,1)
-          ! call rm_from_history(ev)
        return
     endif
 
@@ -138,9 +135,12 @@ end subroutine update_history_check
 integer function loop1(ev)
 
    implicit none
-   type(event), pointer :: ev,nev
-   integer :: i,iat1,iat2,jat1,jat2
+   type(event), pointer :: ev, fake_ev, true_ev
+   integer :: i,iat, iat1,iat2 , n0,n1,n2
    integer, allocatable :: all(:), part(:)
+   
+   integer, allocatable :: buf1(:), buf2(:), add_atoms(:)
+   
 
    loop1 = 0
    if (.not. associated(ev)) return
@@ -152,52 +152,80 @@ integer function loop1(ev)
    if (.not. associated(hist(iat2,1)%p) ) return
    if (.not. associated(hist(iat1,2)%p) ) return
    if (.not. associated(hist(iat2,2)%p) ) return
-   return
-   
-   loop1 = 1
-   if ( associated(hist(iat1,1)%p,hist(iat2,2)%p) ) then 
-       write(*,*) 'stat: Complex loop. reconstruction of history'
-!       all(:) =  hist(iat2,1)%p%part1(:) + hist(iat2,1)%p%part2(:)+ ev%part1(:)
-       if (hist(iat2,1)%p%fusion .eq. 1) then
-!          part(:) = hist(iat1,1)%p%part1(:) + hist(iat1,1)%p%part2(:)
-          call add_fusion(nev,all(:), part(:), hist(iat2,1)%p%time)
-          call rm_from_history(hist(iat1,1)%p)
-          call rm_from_history(hist(iat2,1)%p)
-          call update_hist(nev)
-          return
-       else
-!          part(:) = ev%p%part1(:) + ev%p%part2(:)
-          call add_diss(nev,part(:), all(:), hist(iat2,1)%p%time)
-          call rm_from_history(hist(iat1,1)%p)
-          call rm_from_history(hist(iat2,1)%p)
-          call update_hist(nev)
-          return
-       endif
-   endif
-   
-   if ( associated(hist(iat1,2)%p,hist(iat2,1)%p) ) then 
-       write(*,*) 'stat: Complex loop. reconstruction of history'
-!       all(:) =  hist(iat1,1)%p%part1(:) + hist(iat1,1)%p%part2(:)+ ev%part2(:)
-       if (hist(iat1,1)%p%fusion .eq. 1) then
-!          part(:) = hist(iat2,1)%p%part1(:) + hist(iat2,1)%p%part2(:)
-          call add_fusion(nev,all(:), part(:), hist(iat1,1)%p%time)
-          call rm_from_history(hist(iat1,1)%p)
-          call rm_from_history(hist(iat2,1)%p)
-          call update_hist(nev)
-          return
-       else
-!          part(:) = ev%p%part1(:) + ev%p%part2(:)
-          call add_diss(nev,part(:), all(:), hist(iat1,1)%p%time)
-          call rm_from_history(hist(iat1,1)%p)
-          call rm_from_history(hist(iat2,1)%p)
-          call update_hist(nev)
-          return
-       endif
-   endif
-   
-   loop1 = 0
-   return
 
+   if ( associated(hist(iat1,1)%p,hist(iat2,2)%p) ) then 
+       fake_ev => hist(iat1,1)%p
+       allocate(add_atoms(ev%n1))
+       add_atoms = ev%atoms(1:ev%n1)
+       true_ev => hist(iat2,1)%p
+   endif
+
+   if ( associated(hist(iat1,2)%p,hist(iat2,1)%p) ) then 
+       fake_ev => hist(iat2,1)%p
+       allocate(add_atoms(ev%n2))
+       add_atoms = ev%atoms(ev%n1+1:)
+       true_ev => hist(iat1,1)%p
+   endif
+
+   if (.not. allocated(add_atoms)) return
+
+   loop1 = 1
+   write(*,*) 'hist: Complex loop. reconstruction of history',add_atoms
+   read(*,*)
+
+   n1 = true_ev%n1
+   n2 = true_ev%n2
+   n0 = size(add_atoms(:))
+   write(*,*) 'hist: size',n1, n2, n0
+
+   allocate( buf1(n1), buf2(n2),)
+   buf1(:) = true_ev%atoms(1:n1)
+   buf2(:) = true_ev%atoms(n1+1 : )
+   write(*,*) 'hist: buf',buf1(:),buf2(:)
+
+   deallocate(true_ev%atoms)
+   allocate(true_ev%atoms(n1 + n2 + n0 ))
+
+   if ( associated( hist(true_ev%atoms(1),2)%p, fake_ev ) ) then 
+       ! add to part 1
+       write(*,*) 'hist: add to part 1'
+       true_ev%atoms(1 : n1) = buf1(:)
+       true_ev%atoms(n1+1 : ) = add_atoms(:)
+       true_ev%n1 = n1 + n0
+       true_ev%atoms(n1 + n0 + 1 : ) = buf2(:)
+   else 
+      ! add to part 2
+       write(*,*) 'hist: add to part 2'
+       true_ev%atoms(1:n1) = buf1(:)
+       true_ev%atoms(n1+1 : ) = buf2(:)
+       true_ev%atoms(n1 + n2 + 1 : ) = add_atoms(:)
+       true_ev%n2 = n2 + n0
+   endif
+   deallocate(buf1,buf2)
+   
+   call rm_from_history(fake_ev)
+
+!  update history for new atoms
+   write(*,*) 'hist: Complex loop. reconstruction of history'
+
+   do i=1,size(add_atoms)
+
+      iat = add_atoms(i)
+      n1 = max_hist
+      do while (n1 .gt. 1) 
+         hist(iat,n1)%p => hist(iat,n1-1)%p
+         n1 =n1-1
+      enddo
+      hist(iat,n1)%p => true_ev
+      if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = true_ev%time
+
+   enddo
+   write(*,*) 'hist: Complex loop. reconstruction of history'
+
+   call rm_event(ev)
+   write(*,*) 'hist: Complex loop. reconstruction of history'
+
+   deallocate(add_atoms)
 end function loop1
 
 !=================================
