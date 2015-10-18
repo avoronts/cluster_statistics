@@ -11,6 +11,7 @@ module events
       integer :: fusion = 0		!if grow == 1 - fusion, if grow == -1 - dissociation
       integer :: t_next = 0
       integer :: written = 0
+      real    :: e_part1, e_part2, e_tot
       integer, dimension(:), pointer :: atoms => null()   ! все атомы      
    end type event
 
@@ -103,7 +104,7 @@ subroutine add_diss(new_p,new_cl,old_cl,time)
    all_events(n_events)%p%atoms(1:j-1) = new_cl(1:j-1)
    all_events(n_events)%p%atoms(j:j-1+k-1) = new1_cl(1:k-1)
    all_events(n_events)%p%time = time
-   all_events(n_events)%p%fusion = 1
+   all_events(n_events)%p%fusion = -1
 
    new_p => all_events(n_events)%p
 

@@ -22,6 +22,8 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     double precision pot(max_atom), kin(max_atom), vx(max_atom),vy(max_atom),vz(max_atom), & 
                      x(max_atom),y(max_atom),z(max_atom)
 
+    double precision kin_o(max_atom), pot_o(max_atom)
+
 !this piece of text is devoted to statistical relations betw...
     integer statist(300), npromediar /300/,delta/5/, delta_tau, nstatist /10/
     real*8 mpro,dpro,a
@@ -45,6 +47,9 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
 
     integer i, j, jj, i1, k, nt, cur_clu , icl, iat, iat1, iat2
     integer t, p, n, itwo,ipp, itres, ityp, ikk,ip,iexit,ifile,ik,n1,n2,n3
+    
+    real    :: e_part1, e_part2, e_tot
+  
         
     integer*4  nmax /10000/,natraso /5/,sostav(500)
     !integer cluster7_o(1:nclu,1:nstat),cluster7(1:nclu,1:nstat),mcluster7(0:nclu,2),ncluster7(1:natom),mcluster7_o(0:nclu,2),ncluster7_o(1:natom)
@@ -60,6 +65,8 @@ nt=0
 mcluster(:) = 0        !numero de atoms en cada cluster
 ncluster(:) = 0        !numero de cluster que mantiene este atom 
 cluster(:,:) = 0          !numero del atom metallico
+kin(:) = 0.        
+pot(:) = 0.  
 
 !!me=1 ! DON'T forget to borrar it!
   ! do something
@@ -201,6 +208,9 @@ do while(.true.)
  mcluster_o(:) = mcluster(:)
  ncluster_o(:) = ncluster(:)
  cluster_o(:,:) = cluster(:,:)
+ kin_o(:) = kin(:)
+ pot_o(:) = pot(:)
+
 
  mcluster(:) = 0
  ncluster(:) = 0
@@ -254,6 +264,22 @@ do j=1,5000  ! todos los atoms
 !        write(*,*) 'stat: ! add dissociation'
         if (ncluster(j) .eq. 0) cluster(1,ncluster(j)) = j  ! мономер
         call add_diss(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
+
+        e_part1 = 0
+        e_part2 = 0
+        e_tot = 0
+        do i = 1, nev%n1
+          e_part1 = e_part1 + kin(nev%atoms(i)) + pot(nev%atoms(i))
+          e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+        enddo
+        do i = nev%n1+1,size(nev%atoms)
+          e_part2 = e_part2 + kin(nev%atoms(i)) + pot(nev%atoms(i))
+          e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+        enddo
+        nev%e_tot = e_tot
+        nev%e_part1 = e_part1
+        nev%e_part2 = e_part2
+        
         call update_history(nev)
 
         do i=1,mcluster_o(ncluster_o(j))
@@ -267,6 +293,22 @@ do j=1,5000  ! todos los atoms
 !        write(*,*) 'stat: Add fusion',j
         if (ncluster_o(j) .eq. 0) cluster_o(1,ncluster_o(j)) = j  ! мономер
         call add_fusion(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
+        
+        e_part1 = 0
+        e_part2 = 0
+        e_tot = 0
+        do i = 1, nev%n1
+          e_part1 = e_part1 + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+          e_tot = e_tot + kin(nev%atoms(i)) + pot(nev%atoms(i))
+        enddo
+        do i = nev%n1+1,size(nev%atoms)
+          e_part2 = e_part2 + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+          e_tot = e_tot + kin(nev%atoms(i)) + pot(nev%atoms(i))
+        enddo
+        nev%e_tot = e_tot
+        nev%e_part1 = e_part1
+        nev%e_part2 = e_part2
+        
         call update_history_check(nev) !------ check for loops and update history---------
 
         do i = 1,mcluster(ncluster(j))

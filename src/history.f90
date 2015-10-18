@@ -239,7 +239,7 @@ subroutine  write_hist(p)
     
 !    write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i2, "(",i4," + ", i4,")")') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot,p%e_part1,p%e_part2
     write (40,*) p%atoms(:)
     close(40)
     p%written = 1
