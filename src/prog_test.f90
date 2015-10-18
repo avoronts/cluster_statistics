@@ -90,6 +90,10 @@ do while(.true.)
 !  do j=1,m
 !    num_atom,typ(num_atom),num_vecino4(num_atom),num_vecino5(num_atom),kin(num_atom), pot(num_atom)  !x(num_atom),y(num_atom),z(num_atom),
 !  enddo
+ kin_o(:) = kin(:)
+ pot_o(:) = pot(:)
+
+
     call one_step_data(5)
     if (me .ne. 0) cycle
 
@@ -208,8 +212,6 @@ do while(.true.)
  mcluster_o(:) = mcluster(:)
  ncluster_o(:) = ncluster(:)
  cluster_o(:,:) = cluster(:,:)
- kin_o(:) = kin(:)
- pot_o(:) = pot(:)
 
 
  mcluster(:) = 0

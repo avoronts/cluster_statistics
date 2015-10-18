@@ -50,7 +50,7 @@ subroutine add_fusion(new_p,new_cl,old_cl,time)
    enddo
 
    if (n_events+1 .ge. max_events) then 
-      call grow_all_events(100)
+      call grow_all_events(1000)
    endif
    n_events = n_events + 1
    allocate(all_events(n_events)%p)
