@@ -11,15 +11,15 @@ FC = mpif90    # replace with your Fortran compiler
 CXX = mpicc   # replace with your C++ compiler
 
 # Flags for Fortran compiler, C++ compiler, and C preprocessor, respectively
-FFLAGS = -O2 -fPIC
-CXXFLAGS = -O2 -fPIC 
+FFLAGS =  -O2 -fPIC  
+CXXFLAGS =  -O2 -fPIC 
 CPPFLAGS =
 LDFLAGS = -L. -llammps -L$(HOME)/lib
 
 all : program.x move
 
 program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o events.o sort.f90 history.o prog_test.f90 #test_mpi_interface.f90 #
-	$(FC) $(LDFLAGS) $+ -o $@
+	$(FC) $(LDFLAGS) $+ -o $@ 
 
 LAMMPS.o lammps.mod : LAMMPS.F90
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $<
