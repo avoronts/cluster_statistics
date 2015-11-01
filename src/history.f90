@@ -1,38 +1,49 @@
 module history
+! History of events for atoms/
+! for each atom there is an array of pointers to last events
+!
+!     subroutine create_history(nat)             - create history array
+!     subroutine update_history(ev)              - write event to histories of atoms
+!     subroutine rm_from_history(ev_target)      - remove event from all histories of atoms and from events array
+!     subroutine update_history_check(ev_target) - check for loops and write an event to history
+!     integer function loop1(ev)                 - check for complex loops and correct the history
+
+ 
 
    use events
- 
-   implicit none
 
+   implicit none
+! number of levels in history
    integer, private :: max_hist = 5
+! history array for iach atom 
    type (evptr), dimension(:,:), allocatable ::  hist
 
 contains
 !--------------------------------------------
 subroutine create_history(nat)
-
+! make history array 
+! nat - number of atoms
   implicit none 
   integer nat
 
   allocate(hist(nat,max_hist))
-  
 
 end subroutine create_history
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 subroutine update_history(ev)
-
+! add an event to histories of each atom included in it
+! ev - pointer to event in events array 
    implicit none
    integer :: i,n1,iat
    type(event), pointer :: ev 
-   
+
    if (.not. associated(ev)) return
 !    write(*,*) 'hist: Update history' 
 
    do i = 1, size(ev%atoms)
      iat = ev%atoms(i)
-     call write_hist(hist(iat,max_hist)%p)
-!   call rm_old_history(iat,max_hist)
+     call write_event(hist(iat,max_hist)%p)
 
      n1 = max_hist
      do while (n1 .gt. 1) 
@@ -47,6 +58,8 @@ end subroutine update_history
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
 subroutine rm_from_history(ev_target)
+! remove an event from from events array and from histories of each atom included in it
+! ev_target - pointer to event in events array 
 
    implicit none
    type(event), pointer :: ev,ev_target
@@ -78,38 +91,21 @@ subroutine rm_from_history(ev_target)
 !
 end subroutine rm_from_history
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-recursive subroutine rm_old_history(ev)
-
-   implicit none
-   type(event), pointer, intent(in) :: ev
-   integer :: jat,i,iat,n,n1
-   
-   if (.not. associated(hist(jat,n)%p)) return
-   write(*,*) 'hist: remove history ',n,' atom ',jat
-   
-   do i = 1, ev%n1+ev%n2
-     iat = ev%atoms(i)
-     n1 = 1
-     do while (n1 .le. max_hist) 
-        if (hist(iat,n1)%p%time .lt. ev%time) then
-          call rm_old_history(hist(iat,n1)%p)
-        endif
-     enddo
-   enddo 
-
-   call rm_from_history(hist(iat,n1)%p)
-
-end subroutine rm_old_history
-
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>
 subroutine update_history_check(ev_target)
+! check a new event for loops and update the hisory array 
+! ev_target - pointer to event in events array 
 
     implicit none
     integer :: iat1,iat2
     type(event), pointer :: ev,ev_target
 
     ev => ev_target
+    if (ev%fusion .eq. -1) then
+        call update_history(ev)
+        return
+    endif
+
 !   write(*,*) 'hist: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
     iat1 = ev%atoms(1)
     iat2 = ev%atoms(ev%n1+1)
@@ -133,6 +129,9 @@ end subroutine update_history_check
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
 integer function loop1(ev)
+! check a new event for complex loop in history
+! (if two parts of a cluster were separated and having a collision at that time)
+! ev - pointer to event in events array 
 
    implicit none
    type(event), pointer :: ev, fake_ev, true_ev
@@ -229,24 +228,5 @@ integer function loop1(ev)
 
    deallocate(add_atoms)
 end function loop1
-
-!=================================
-subroutine  write_hist(p)
-   
-   implicit none
-   type(event), pointer :: p
-       
-    if (.not. associated(p)) return
-    if (p%written .eq. 1) return
-    
-!    write(*,*) 'hist: write event to file!!!'
-    open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot,p%e_part1,p%e_part2
-    write (40,*) p%atoms(:)
-    close(40)
-    p%written = 1
-       
-end subroutine write_hist
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-
 end module history

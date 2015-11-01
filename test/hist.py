@@ -6,17 +6,18 @@ try:
    while 1 == 1:
      try:
         i = f.next()
-        dat = [j for j in i.replace('(','').replace(')','').replace('+','').split()]
-#        print dat
-        if dat[2] == '1':
-           if dat[3] == dat[4] == '1':
-              stat.append(int(dat[1]))
-        i = f.next()
+        try:
+           dat = [j for j in i.replace('(','').replace(')','').replace('+','').split()]
+#           print dat
+           if dat[2] == '1':
+              if dat[3] == dat[4] == '1':
+                 stat.append(int(dat[1]))
+        except:
+           pass
      except:
         break
    f.close()
 
-   stat = [j*0.003  for j in stat if j<100]
    f=open('dat.dat','wb')
    f.write(str(stat))
    f.close()
@@ -25,6 +26,9 @@ except:
    
 f=open('dat.dat','rb')
 time =  [float(j) for j in f.readline().replace('[','').replace(']','').split(',')]
+time = [j*0.003*5  for j in time if 200>j>70]
+#print time
+
 f.close()
 
 try:

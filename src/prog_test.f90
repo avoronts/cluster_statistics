@@ -277,63 +277,34 @@ do j=1,5000  ! todos los atoms
   if (cyp(j) .eq. 1) cycle      ! skip atoms if they are in known clusters
   if (typ(j) .ne. 1) cycle
   if (mcluster(ncluster(j)) .eq. mcluster_o(ncluster_o(j))) cycle
+
+!---------------------
+  if (ncluster(j) .eq. 0) cluster(1,ncluster(j)) = j  ! мономер
+  if (ncluster_o(j) .eq. 0) cluster_o(1,ncluster_o(j)) = j  ! мономер
   
-  if (mcluster(ncluster(j)) < mcluster_o(ncluster_o(j))) then 
-!        write(*,*) 'stat: ! add dissociation'
-        if (ncluster(j) .eq. 0) cluster(1,ncluster(j)) = j  ! мономер
-        call add_diss(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
+  call add_event(nev,cluster(:,ncluster(j)), mcluster(ncluster(j)),cluster_o(:,ncluster_o(j)),mcluster_o(ncluster_o(j)),nt)
 
-        e_part1 = 0
-        e_part2 = 0
-        e_tot = 0
-        do i = 1, nev%n1
-          e_part1 = e_part1 + kin(nev%atoms(i)) + pot(nev%atoms(i))
-          e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-        enddo
-        do i = nev%n1+1,size(nev%atoms)
-          e_part2 = e_part2 + kin(nev%atoms(i)) + pot(nev%atoms(i))
-          e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-        enddo
-        nev%e_tot = e_tot
-        nev%e_part1 = e_part1
-        nev%e_part2 = e_part2
-        
-        call update_history(nev)
+  do i=1,size(nev%atoms)	!mcluster_o(ncluster_o(j))
+      iat = nev%atoms(i)   !cluster_o(i,ncluster_o(j))
+      cyp(iat) = 1
+  enddo
 
-        do i=1,mcluster_o(ncluster_o(j))
-          iat = cluster_o(i,ncluster_o(j))
-          cyp(iat) = 1
-        enddo
-        
-  endif
+  e_part1 = 0
+  e_part2 = 0
+  e_tot = 0
+  do i = 1, nev%n1
+      e_part1 = e_part1 + kin(nev%atoms(i)) + pot(nev%atoms(i))
+      e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+  enddo
+  do i = nev%n1+1,size(nev%atoms)
+      e_part2 = e_part2 + kin(nev%atoms(i)) + pot(nev%atoms(i))
+      e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
+  enddo
+  nev%e_tot = e_tot
+  nev%e_part1 = e_part1
+  nev%e_part2 = e_part2
+  call update_history_check(nev) !------ check for loops and update history---------
 
-  if (mcluster(ncluster(j)) > mcluster_o(ncluster_o(j))) then 
-!        write(*,*) 'stat: Add fusion',j
-        if (ncluster_o(j) .eq. 0) cluster_o(1,ncluster_o(j)) = j  ! мономер
-        call add_fusion(nev,cluster(:,ncluster(j)), cluster_o(:,ncluster_o(j)), nt)
-        
-        e_part1 = 0
-        e_part2 = 0
-        e_tot = 0
-        do i = 1, nev%n1
-          e_part1 = e_part1 + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-          e_tot = e_tot + kin(nev%atoms(i)) + pot(nev%atoms(i))
-        enddo
-        do i = nev%n1+1,size(nev%atoms)
-          e_part2 = e_part2 + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-          e_tot = e_tot + kin(nev%atoms(i)) + pot(nev%atoms(i))
-        enddo
-        nev%e_tot = e_tot
-        nev%e_part1 = e_part1
-        nev%e_part2 = e_part2
-        
-        call update_history_check(nev) !------ check for loops and update history---------
-
-        do i = 1,mcluster(ncluster(j))
-           iat = cluster(i,ncluster(j))
-           cyp(iat) = 1
-        enddo
-  endif
 
 enddo   !form j=1,5000
 

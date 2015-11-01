@@ -10,7 +10,7 @@ module events
       integer :: time = 0		!время столкновения или время разваливания
       integer :: fusion = 0		!if grow == 1 - fusion, if grow == -1 - dissociation
       integer :: t_next = 0
-      integer :: written = 0
+      integer :: ref_number = 0
       real    :: e_part1, e_part2, e_tot
       integer, dimension(:), pointer :: atoms => null()   ! все атомы      
    end type event
@@ -26,93 +26,69 @@ module events
 contains
 
 !<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-subroutine add_fusion(new_p,new_cl,old_cl,time)
+subroutine add_event(new_p,new_cl,new_size,old_cl,old_size,time)
+!   make an event and add it to events list  
+!   new_cl, new_size  - list of atoms in new cluster and it's size
+!   old_cl, old_size  - list of atoms in old cluster and it's size
+!   time  - time of event
+!   new_p - pointer to the new event
 
    implicit none
-   integer, intent(in) :: new_cl(*),old_cl(*), time
-   type(event), pointer :: new_p
-   
-
-   integer :: old1_cl(1000), i,j,k
-    
-!   write(*,*) 'event: add fusion procedure', time, new_cl(1:5),old_cl(1:5)
-   i = 1
-   j = 1
-   k = 1
-   do while (new_cl(i) > 0)
-     if (new_cl(i) == old_cl(j)) then 
-       j = j + 1
-     else
-       old1_cl(k) = new_cl(i)
-       k = k + 1
-     endif
-     i = i + 1
-   enddo
-
-   if (n_events+1 .ge. max_events) then 
-      call grow_all_events(1000)
-   endif
-   n_events = n_events + 1
-   allocate(all_events(n_events)%p)
-   allocate(all_events(n_events)%p%atoms(j-1+k-1))
-
-   all_events(n_events)%p%n1 = j-1
-   all_events(n_events)%p%n2 = k-1
-   all_events(n_events)%p%atoms(1:j-1) = old_cl(1:j-1)
-   all_events(n_events)%p%atoms(j:j-1+k-1) = old1_cl(1:k-1)
-   all_events(n_events)%p%time = time
-   all_events(n_events)%p%fusion = 1
-
-   new_p => all_events(n_events)%p
-
-   write(*,*) 'event:',n_events,' fusion: size1 = ', j-1, old_cl(1:j-1),' size2 = ', k-1, old1_cl(1:k-1)
-
-end subroutine add_fusion
-!----------------------------------------------
-subroutine add_diss(new_p,new_cl,old_cl,time)
-
-   implicit none
-   integer,intent(in) :: new_cl(*),old_cl(*), time
+   integer,intent(in) :: new_size,old_size
+   integer,intent(in), target :: new_cl(new_size),old_cl(old_size), time
+   integer, pointer, dimension(:) :: big
    type(event), pointer :: new_p
 
-   integer :: new1_cl(1000), i,j,k
+   integer ::  i,j,k,n1
 !   write(*,*) 'event: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
 
-   i = 1
-   j = 1
-   k = 1
-   do while (old_cl(i) > 0)
-     if (old_cl(i) == new_cl(j)) then 
-       j = j + 1
-     else
-       new1_cl(k) = old_cl(i)
-       k = k + 1
-     endif
-     i = i + 1
-   enddo
-
    if (n_events+1 .ge. max_events) then 
       call grow_all_events(1000)
    endif
-   
    n_events = n_events + 1
    allocate(all_events(n_events)%p)
-   allocate(all_events(n_events)%p%atoms(j-1+k-1))
- 
-   all_events(n_events)%p%n1 = j-1
-   all_events(n_events)%p%n2 = k-1
-   all_events(n_events)%p%atoms(1:j-1) = new_cl(1:j-1)
-   all_events(n_events)%p%atoms(j:j-1+k-1) = new1_cl(1:k-1)
+
+   if (new_size .gt. old_size) then
+     big   => new_cl(:)
+     all_events(n_events)%p%fusion = 1
+     allocate(all_events(n_events)%p%atoms(new_size))
+     n1 = old_size
+     all_events(n_events)%p%atoms(1:n1) = old_cl(:)
+   else
+     big   => old_cl(:)
+     all_events(n_events)%p%fusion = -1
+     allocate(all_events(n_events)%p%atoms(old_size))
+     n1 = new_size
+     all_events(n_events)%p%atoms(1:n1) = new_cl(:)
+   endif
+ !  write(*,*) big,'+',part1
+   
+   k = n1+1
+   j = 1
+   do i = 1,size(big)
+     if (big(i) == all_events(n_events)%p%atoms(j)) then 
+       j = j + 1
+     else
+       all_events(n_events)%p%atoms(k) = big(i)
+       k = k + 1
+     endif
+   enddo
+
+   all_events(n_events)%p%n1 = n1
+   all_events(n_events)%p%n2 = size(big)-n1
    all_events(n_events)%p%time = time
-   all_events(n_events)%p%fusion = -1
+   all_events(n_events)%p%ref_number = size(big)
 
    new_p => all_events(n_events)%p
 
-   write(*,*) 'event:',n_events,' dissociation:  size1 = ', j-1, new_cl(1:j-1),' size2 = ', k-1, new1_cl(1:k-1)
+   write(*,*) 'event:',n_events, new_p%fusion, ' size1 = ', new_p%n1, ' size2 = ', new_p%n2, new_p%atoms
 
-end subroutine add_diss
+end subroutine add_event
+
 !----------------------------------------------
 subroutine rm_event(ev_target)
+!   remove  an event from the events list
+!   ev_target - pointer to the event
 
    implicit none
    type(event), pointer :: ev,ev_target
@@ -161,6 +137,8 @@ end subroutine rm_event
 
 !----------------------------------------------
 integer function ev_number(ev)
+!   return event position in events list
+!   ev - pointer to the event
 
    implicit none
    type(event), pointer :: ev
@@ -180,10 +158,11 @@ integer function ev_number(ev)
    ev_number = -1 
 
 end function ev_number
-!----------------------------------------------
 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+!----------------------------------------------
 subroutine grow_all_events(n)
+!   grow all_events array 
+!   n - increment 
 
    implicit none
    integer n,i
@@ -211,5 +190,26 @@ subroutine grow_all_events(n)
 
 end subroutine grow_all_events
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111
+!=================================
+subroutine  write_event(p)
+! write an event to file and delete it from the list (if there are no references)
+! p - pointer to the event
+   implicit none
+   type(event), pointer :: p
 
-end module events	
+    if (.not. associated(p)) return
+
+! if number of references to the event is 0 then write it and delete it from the list
+    p%ref_number = p%ref_number - 1
+    if (p%ref_number .gt. 0) return
+
+!    write(*,*) 'hist: write event to file!!!'
+    open(40,file='hist.dat',access='append')
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot,p%e_part1,p%e_part2
+    write (40,*) p%atoms(:)
+    close(40)
+    call rm_event(p)
+
+end subroutine write_event
+
+end module events
