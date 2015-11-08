@@ -12,6 +12,7 @@ module events
       integer :: t_next = 0
       integer :: ref_number = 0
       real    :: e_part1, e_part2, e_tot
+      integer :: c1, c2
       integer, dimension(:), pointer :: atoms => null()   ! все атомы      
    end type event
 
@@ -205,7 +206,8 @@ subroutine  write_event(p)
 
 !    write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot,p%e_part1,p%e_part2
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5,2i6)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot, & 
+                                                                p%e_part1,p%e_part2,p%c1,p%c2
     write (40,*) p%atoms(:)
     close(40)
     call rm_event(p)

@@ -39,6 +39,7 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
 ! this data for cluster storage
     integer ncluster(max_atom),ncluster_o(max_atom),mcluster(0:nclu), mcluster_o(0:nclu)
     integer cluster(1:nstat+1,0:nclu),cluster_o(1:nstat+1,0:nclu)
+    integer conts(1:nstat+1)
 
 
 !    integer*4 numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
@@ -236,10 +237,13 @@ do while(.true.)
  mcluster(0) = 1     ! нулевой кластер описывает все мономеры (размер 1) 
  cur_clu=0
 
-
+conts(:) = 0
  do iat = 1,natoms
      if (typ(iat) .ne. 1) cycle
-     if (iat .eq. num_vecino5(iat)) cycle
+     if (iat .eq. num_vecino5(iat)) then
+       conts(1) = conts(1) + 1
+       cycle
+     endif
 
      icl = Ncluster(num_vecino5(iat))
 !     write(*,*) iat, num_vecino5(iat),typ(iat),icl
@@ -262,9 +266,11 @@ do while(.true.)
      
  enddo    !!num_atom==1,m
 
-
 do icl = 1, cur_clu
    call QsortC(cluster(1:mcluster(icl),icl))
+   if (mcluster(icl) .lt. nstat) then
+      conts(mcluster(icl)) = conts(mcluster(icl)) + 1
+   endif
 enddo    !!num_atom==1,m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
@@ -273,7 +279,7 @@ if(int(1.*nt/1000).eq. 1.*nt/1000) write(*,*) 'stat: time = ', nt
 cyp(:) = 0
 do j=1,5000  ! todos los atoms
 
-  if (nt .lt. 10) cycle
+  if (nt .lt. 5) cycle
   if (cyp(j) .eq. 1) cycle      ! skip atoms if they are in known clusters
   if (typ(j) .ne. 1) cycle
   if (mcluster(ncluster(j)) .eq. mcluster_o(ncluster_o(j))) cycle
@@ -303,6 +309,8 @@ do j=1,5000  ! todos los atoms
   nev%e_tot = e_tot
   nev%e_part1 = e_part1
   nev%e_part2 = e_part2
+  nev%c1 = conts(nev%n1)
+  nev%c2 = conts(nev%n2)
   call update_history_check(nev) !------ check for loops and update history---------
 
 

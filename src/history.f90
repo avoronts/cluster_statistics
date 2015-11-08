@@ -168,7 +168,7 @@ integer function loop1(ev)
 
    if (.not. allocated(add_atoms)) return
 
-   write(*,*) 'hist: Complex loop. reconstruction of history',add_atoms
+   write(*,*) 'hist: Complex loop. reconstruction of history',add_atoms,'+', true_ev%atoms
    return
    
    loop1 = 1
