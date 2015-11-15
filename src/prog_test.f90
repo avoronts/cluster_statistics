@@ -254,6 +254,7 @@ conts(:) = 0
                Ncluster(num_vecino5(iat)) = icl
                mcluster(icl) = mcluster(icl)+1
                cluster(mcluster(icl),icl) = num_vecino5(iat)
+               conts(1) = conts(1) - 1
             endif
      endif
 
