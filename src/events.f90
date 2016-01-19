@@ -6,14 +6,14 @@ module events
 
    type event 
 !      integer, dimension(:), allocatable :: part1,  part2   ! части кластера
-      integer :: n1, n2		!размеры частей n1 >= n2
+      integer :: n1, n2		!размеры частей
       integer :: time = 0		!время столкновения или время разваливания
       integer :: fusion = 0		!if grow == 1 - fusion, if grow == -1 - dissociation
-      integer :: t_next = 0
-      integer :: ref_number = 0
-      real    :: e_part1, e_part2, e_tot
-      integer :: c1, c2
-      integer, dimension(:), pointer :: atoms => null()   ! все атомы      
+!      integer :: t_next = 0
+      integer :: ref_number = 0		! число ссылок на данное событие (для удаления ненужных событий)
+      real    :: e_part1, e_part2, e_tot	! энергия частей и энергия суммы
+      real :: c1, c2
+      integer, dimension(:), pointer :: atoms => null()   ! массив со всеми атомами
    end type event
 
    type evptr			! ссылка на событие
@@ -192,13 +192,14 @@ subroutine grow_all_events(n)
 end subroutine grow_all_events
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11111
 !=================================
-subroutine  write_event(p)
+subroutine  write_event(p,p1)
 ! write an event to file and delete it from the list (if there are no references)
 ! p - pointer to the event
    implicit none
-   type(event), pointer :: p
+   type(event), pointer :: p, p1
 
     if (.not. associated(p)) return
+    if (.not. associated(p1)) return
 
 ! if number of references to the event is 0 then write it and delete it from the list
     p%ref_number = p%ref_number - 1
@@ -206,10 +207,21 @@ subroutine  write_event(p)
 
 !    write(*,*) 'hist: write event to file!!!'
     open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5,2i6)') p%time,p%t_next-p%time, p%fusion,p%n1,p%n2,p%e_tot, & 
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5, 2f10.3)') p%time,p1%time-p%time, p%fusion,p%n1,p%n2, & 
                                                                 p%e_part1,p%e_part2,p%c1,p%c2
     write (40,*) p%atoms(:)
     close(40)
+
+    if ((p%fusion.eq.1).and.(p1%fusion.eq.-1)) then
+      if ((p%n1 .gt.1) .or. (p%n2.gt.1)) then
+        open(41,file='collision.dat',access='append')
+        write (41,'("(",i4," + ", i4,") -> (",i4," + ", i4,")", i10, 6f10.5 )') p%n1,p%n2, p1%n1,p1%n2, p1%time-p%time, & 
+                                                        p%e_part1,p%e_part2, p%e_tot, p1%e_tot, p1%e_part1,p1%e_part2
+        write (41,*) p%atoms(:)
+        close(41)
+      endif
+    endif
+
     call rm_event(p)
 
 end subroutine write_event

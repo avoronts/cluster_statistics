@@ -43,15 +43,16 @@ subroutine update_history(ev)
 
    do i = 1, size(ev%atoms)
      iat = ev%atoms(i)
-     call write_event(hist(iat,max_hist)%p)
+     call write_event(hist(iat,max_hist)%p,hist(iat,max_hist-1)%p)	! write the oldest event (if exists)
 
+! shift events in atom history
      n1 = max_hist
      do while (n1 .gt. 1) 
         hist(iat,n1)%p => hist(iat,n1-1)%p
         n1 =n1-1
      enddo
      hist(iat,n1)%p => ev
-     if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = ev%time
+!     if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = ev%time
    enddo 
 
 end subroutine update_history
@@ -107,19 +108,19 @@ subroutine update_history_check(ev_target)
     endif
 
 !   write(*,*) 'hist: add dissociation procedure', time, new_cl(1:5),old_cl(1:5)
-    iat1 = ev%atoms(1)
+    iat1 = ev%atoms(1)		! 2 atoms in two parts of cluster
     iat2 = ev%atoms(ev%n1+1)
 
 !------ check for loops ---------
     if ( associated(hist(iat1,1)%p,hist(iat2,1)%p) ) then 
        write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
         !   ev => hist(iat1,1)%p
-       call rm_from_history(hist(iat1,1)%p)
-       call rm_event(ev)
+       call rm_from_history(hist(iat1,1)%p)	! del events from history
+       call rm_event(ev)			! del new event
        return
     endif
 
-    if ( loop1(ev) .eq. 1 ) then 
+    if ( loop1(ev) .eq. 1 ) then 	! check for complex loop
        return
     endif
 
@@ -169,7 +170,7 @@ integer function loop1(ev)
    if (.not. allocated(add_atoms)) return
 
    write(*,*) 'hist: Complex loop. reconstruction of history',add_atoms,'+', true_ev%atoms
-   return
+!   return
    
    loop1 = 1
 !   read(*,*)
@@ -218,7 +219,7 @@ integer function loop1(ev)
          n1 =n1-1
       enddo
       hist(iat,n1)%p => true_ev
-      if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = true_ev%time
+!      if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = true_ev%time
 
    enddo
    write(*,*) 'hist: Complex loop. reconstruction of history'

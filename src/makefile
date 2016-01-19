@@ -18,7 +18,7 @@ LDFLAGS = -L. -llammps -L$(HOME)/lib
 
 all : program.x move
 
-program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o events.o sort.f90 history.o prog_test.f90 #test_mpi_interface.f90 #
+program.x : LAMMPS.o LAMMPS-wrapper.o LAMMPS_gether.o events.o sort.f90 history.o prog_test.f90 con.f90 #test_mpi_interface.f90 #
 	$(FC) $(LDFLAGS) $+ -o $@ 
 
 LAMMPS.o lammps.mod : LAMMPS.F90
@@ -34,6 +34,9 @@ history.o history.mod : history.f90
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $<
 
 events.o events.mod : events.f90
+	$(FC) $(CPPFLAGS) $(FFLAGS) -c $<
+
+con.o con.mod : con.f90
 	$(FC) $(CPPFLAGS) $(FFLAGS) -c $<
 
 sort.o sort.mod : sort.f90

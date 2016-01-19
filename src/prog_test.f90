@@ -5,6 +5,7 @@ program simple
   use history
   use events
   use sort
+  use con
   
   implicit none
   
@@ -40,6 +41,7 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     integer ncluster(max_atom),ncluster_o(max_atom),mcluster(0:nclu), mcluster_o(0:nclu)
     integer cluster(1:nstat+1,0:nclu),cluster_o(1:nstat+1,0:nclu)
     integer conts(1:nstat+1)
+    real conts1(1:nstat+1)
 
 
 !    integer*4 numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
@@ -88,6 +90,7 @@ if (me .eq. 0) then	! init statistics
   enddo
 
   call create_history(max_atom)
+  call create_con(nstat, 100, 100)
 endif
 
 !open(150,file='stat2.dat')
@@ -138,94 +141,13 @@ do while(.true.)
         enddo
         !print  *, '<<<<<<<<<<< read done  >>>>>>>>>>>>>>>>>'
         nt=nt+1
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
-!!!!!!!!!!!!!!!!!!!!! check 1. my code 21.05.2015 !!!!!!!!!!!!!!!!1
    open(5050,File='qqq')    !'//trim(sfile)//'
    write(5050,*) nt			!real*8 kin(1: natom)
    close(5050)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 
-
-!!!!!!!!!!!!!!!!!!!!! check 1. my code 21.05.2015 !!!!!!!!!!!!!!!!1
-!   write(sfile,'(i0)') (nt+1)*natraso
-!
-!   sfile=trim('dump/check_in'//trim(sfile)//'.bin')
-!   write(*,*) sfile
-!   open(5050,File=sfile,form='unformatted')    !'//trim(sfile)//'
-!
-!   write(5050) typ 			!integer typ(1:natom)
-!   write(5050) num_vecino5		!integer*4 num_vecino5(1:natom)
-!   write(5050) kin			!real*8 kin(1: natom)
-!   close(5050)
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!if(int(1.*nt/nmax).eq. 1.*nt/nmax) then
-!   close(44000)
-!
-!   !<<<<<<<<<<<<<<< statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-!   if((int(1.*(nt)/nstatist/nmax).eq. 1.*(nt)/nstatist/nmax) .and. nt .ne. 0) then
-!   !if((int(1.*(nt-1)/nstatist/nmax).eq. 1.*(nt-1)/nstatist/nmax) .and. nt .ne. 1) then
-!
-!     statist=0 
-!     a=0.
-!     j=int(1.*nt/nmax)
-!     do   ifile=j-nstatist + 1, j, 1
-!       write(sfile,'(i0)') ifile
-!       sfile=('r'//trim(sfile)//'.dat')
-!       inquire (file=sfile,exist=sexist)
-!       if(sexist) then
-!         open(18,File=sfile,err=12) 
-!
-!         do while(.true.)    
-!
-!        !   read(18,('(2(i12,1x),a12,1x,a12,1x,3(i12,1x),125(i5,1x))'),end=11 ) ityp,n,sline,sline, n3, n1,n2, & 
-!        !             (numjt(ik), ik=1,12)
-!           if(sline.ne.'*******') then
-!               read(sline,'(i12)') delta_tau
-!           endif
-!
-!           if (curnum1==n .and. (ityp==1 .or. ityp==-1) .and. sline.ne.'*******') then    !ityp==1 .or. ityp==-1)
-!               a=a+1.
-!               do i=1,npromediar
-!                  if (delta_tau>=(i-1.)*delta .and. delta_tau < i*delta) then
-!                     statist(i)=statist(i)+1
-!                     exit
-!                  endif 
-!               enddo 
-!           endif
-!
-!         enddo
-!     11  continue
-!     
-!       endif  ! if(sexist) then
-!     enddo   !from  do   ifile=j-nstatist + 1, j, 1
-!  12 continue
-!
-!     Mpro=0.
-!     dpro=0.
-!     do i=1,npromediar
-!        Mpro=Mpro+statist(i)*(i*delta+delta/2.)/a
-!        dpro=dpro+statist(i)*(i*delta+delta/2.)**2/a
-!     enddo
-!     dpro=dpro-mpro**2
-!      ! write(14, '( 425(i5,1x))' ) (sargon(i),i=1,120)
-!     write(150,('(i7,1x,3(F10.3, 1x), 425(i5,1x))')) ifile,a,mpro,dpro,(statist(i),i=1,npromediar)
-!
-!   endif    !from if(int(1.*nt/nstatist).eq. 1.*nt/nstatist) then
-!<<<<<<<<<<<<<<<<<<<<<<<<<<<< end statistics >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-!
-!   write(sfile,'(i0)') int(nt/nmax)+1
-!   !open(41000,File='osc'//trim(sfile)//'.dat') 
-!   !open(15,File='t'//trim(sfile)//'.dat')      
-!   open(44000,File='r'//trim(sfile)//'.dat')      
-!   !open(42000,File='pro_argon'//trim(sfile)//'.dat')
-!   ! open(43000,File='pro_argon_menos'//trim(sfile)//'.dat')      
-!   ! open(47000,File='prot'//trim(sfile)//'.dat')      
-!endif
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-!                do ifile=1,nmax
-!										    if (me.eq.1) then  
  mcluster_o(:) = mcluster(:)
  ncluster_o(:) = ncluster(:)
  cluster_o(:,:) = cluster(:,:)
@@ -269,10 +191,16 @@ conts(:) = 0
 
 do icl = 1, cur_clu
    call QsortC(cluster(1:mcluster(icl),icl))
-   if (mcluster(icl) .lt. nstat) then
+   if (mcluster(icl) .le. nstat) then
       conts(mcluster(icl)) = conts(mcluster(icl)) + 1
    endif
 enddo    !!num_atom==1,m
+
+call update_con(conts,nstat)
+!  write (80,*) conts(1:10)
+
+call get_con(conts1)
+!      write (80,*) conts1(1:10)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!11
 if(int(1.*nt/1000).eq. 1.*nt/1000) write(*,*) 'stat: time = ', nt
@@ -310,8 +238,8 @@ do j=1,5000  ! todos los atoms
   nev%e_tot = e_tot
   nev%e_part1 = e_part1
   nev%e_part2 = e_part2
-  nev%c1 = conts(nev%n1)
-  nev%c2 = conts(nev%n2)
+  nev%c1 = conts1(nev%n1)
+  nev%c2 = conts1(nev%n2)
   call update_history_check(nev) !------ check for loops and update history---------
 
 
