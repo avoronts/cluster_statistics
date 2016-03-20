@@ -127,11 +127,11 @@ subroutine one_step_data (step)
 
     natoms = 0
     if (lammps_fl == 1)  then
-       if ((icall .eq. ncall) .and. (ncall .gt. 0)) then
-           icall = 0
-           call lammps_command(lmp,'write_restart restart_file1')
-       endif
-       icall = icall +1
+!       if ((icall .eq. ncall) .and. (ncall .gt. 0)) then
+!           icall = 0
+!           call lammps_command(lmp,'write_restart restart_file1')
+!       endif
+!       icall = icall +1
 !     call lammps_command(lmp,'fix fff all ave/atom 1 1 '//trim(str_step)//' c_pe1')
 
        call lammps_command(lmp,'run '//trim(str_step)//' pre no post no')

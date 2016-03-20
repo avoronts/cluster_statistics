@@ -10,3 +10,4 @@ log.*
 restart*
 qqq
 /test/*/
+err

@@ -82,7 +82,7 @@ subroutine add_event(new_p,new_cl,new_size,old_cl,old_size,time)
 
    new_p => all_events(n_events)%p
 
-   write(*,*) 'event:',n_events, new_p%fusion, ' size1 = ', new_p%n1, ' size2 = ', new_p%n2, new_p%atoms
+   write(*,*) 'event:',n_events, new_p%time, new_p%fusion, ' size1 = ', new_p%n1, ' size2 = ', new_p%n2, new_p%atoms
 
 end subroutine add_event
 
@@ -97,11 +97,13 @@ subroutine rm_event(ev_target)
 
    ev => ev_target
    if (.not. associated(ev)) then
-     write(*,*) 'event: warning try delete bad event' 
+     write(*,*) 'rm_event: warning! try delete not associated event'
      return
    endif
 !   write(*,*) 'event: remove event',n_events
 
+   if (ev%n1 + ev%n2.ne.size(ev%atoms)) write (*,*) 'rm_event: bad event!!!'
+       
    if ( associated(ev, all_events(n_events)%p) ) then
       deallocate(all_events(n_events)%p%atoms)
       deallocate(all_events(n_events)%p)
@@ -114,11 +116,12 @@ subroutine rm_event(ev_target)
    do while (i .le. n_events)
       if ( associated(ev, all_events(i)%p) ) then
 !         write(*,*) 'event: ', ev%part1,ev%part2
+         write(*,*) 'rm_event: del event number', i, 'from', n_events, 'time', ev%time
+
          deallocate(ev%atoms)
          deallocate(ev)
          nullify(ev)
 
-         write(*,*) 'event: del event nimber', i,n_events
          do while (i .lt. n_events)
             all_events(i)%p => all_events(i+1)%p
             i = i+1
@@ -132,7 +135,7 @@ subroutine rm_event(ev_target)
       endif 
       i = i+1
    enddo
-   write(*,*) 'event: bad pointer. No event'
+   write(*,*) 'rm_event: bad pointer. Try to remove unknown event'
 
 end subroutine rm_event
 
@@ -147,7 +150,7 @@ integer function ev_number(ev)
 
    ev_number = 0
    if (.not. associated(ev)) return
-
+ 
    i = 1
    do while (i .le. n_events)
       if ( associated(ev, all_events(i)%p) ) then
@@ -200,14 +203,18 @@ subroutine  write_event(p,p1)
 
     if (.not. associated(p)) return
     if (.not. associated(p1)) return
+!    write(*,*) 'write_event: ',(p .eq. Null())
+
+  if (p%n1 + p%n2.ne.size(p%atoms)) write (*,*) 'bad event!!! write events',ev_number(p),p%ref_number,p%n1,p%n2, p%time
 
 ! if number of references to the event is 0 then write it and delete it from the list
     p%ref_number = p%ref_number - 1
     if (p%ref_number .gt. 0) return
 
-!    write(*,*) 'hist: write event to file!!!'
+    write(*,*) 'write_event: write event!!!',p%time, p%n1, p%n2, p%atoms(:)
+
     open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5, 2f10.3)') p%time,p1%time-p%time, p%fusion,p%n1,p%n2, & 
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5, 2f12.3)') p%time,p1%time-p%time, p%fusion,p%n1,p%n2, & 
                                                                 p%e_part1,p%e_part2,p%c1,p%c2
     write (40,*) p%atoms(:)
     close(40)
