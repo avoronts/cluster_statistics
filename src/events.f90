@@ -214,7 +214,7 @@ subroutine  write_event(p,p1)
     write(*,*) 'write_event: write event!!!',p%time, p%n1, p%n2, p%atoms(:)
 
     open(40,file='hist.dat',access='append')
-    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f10.5, 2f12.3)') p%time,p1%time-p%time, p%fusion,p%n1,p%n2, & 
+    write (40,'(i10, i7, i3, "(",i4," + ", i4,")",3f12.5, 2f15.3)') p%time,p1%time-p%time, p%fusion,p%n1,p%n2, & 
                                                                 p%e_part1,p%e_part2,p%c1,p%c2
     write (40,*) p%atoms(:)
     close(40)
@@ -222,7 +222,7 @@ subroutine  write_event(p,p1)
     if ((p%fusion.eq.1).and.(p1%fusion.eq.-1)) then
       if ((p%n1 .gt.1) .or. (p%n2.gt.1)) then
         open(41,file='collision.dat',access='append')
-        write (41,'("(",i4," + ", i4,") -> (",i4," + ", i4,")", i10, 6f10.5 )') p%n1,p%n2, p1%n1,p1%n2, p1%time-p%time, & 
+        write (41,'("(",i4," + ", i4,") -> (",i4," + ", i4,")", i10, 6f12.5 )') p%n1,p%n2, p1%n1,p1%n2, p1%time-p%time, & 
                                                         p%e_part1,p%e_part2, p%e_tot, p1%e_tot, p1%e_part1,p1%e_part2
         write (41,*) p%atoms(:)
         close(41)

@@ -13,6 +13,9 @@ program simple
 integer nstat,max_atom,nclu,n_entre
 parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
 
+double precision mat
+parameter(mat = 63.55e-3/6.02/1.6)
+
 !this data for exchange with LAMMPS program
 
     !integer me - from LAMMPS_gether module
@@ -20,10 +23,9 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     !integer int_buf - from LAMMPS_gether module
     !integer dbl_buf - from LAMMPS_gether module
     integer  typ(max_atom), num_atom, num_vecino4(max_atom), num_vecino5(max_atom)
-    double precision vx(max_atom),vy(max_atom),vz(max_atom), & 
-                     x(max_atom),y(max_atom),z(max_atom)
+    double precision  x(max_atom),y(max_atom),z(max_atom), vx(max_atom),vy(max_atom),vz(max_atom)
 
-    double precision, target :: pot1(max_atom), kin1(max_atom),kin2(max_atom), pot2(max_atom)
+    double precision, target :: pot1(max_atom), kin1(max_atom),kin2(max_atom), pot2(max_atom) 
 
     double precision, pointer, dimension (:) :: pot, pot_o, kin, kin_o, tmp_ptr
 
@@ -42,14 +44,14 @@ parameter(nstat=125,max_atom=25001,nclu=2500,n_entre=15)
     integer cluster(1:nstat+1,0:nclu),cluster_o(1:nstat+1,0:nclu)
     integer conts(1:nstat+1)
     real conts1(1:nstat+1)
-
+    double precision  energ(max_atom), energ_o(max_atom),vx_cl(max_atom), vy_cl(max_atom), vz_cl(max_atom)
 
 !    integer*4 numj_all(1000), numt_t(1000),numj_o(1000),numjt(1000),numt_o(1000),numt_all(1000)
 !    integer   knumj_all, knumt_t, knumj_o, knumjt, knumt_o, knumt_all
 
     integer cyp(max_atom)
 
-    integer i, j, jj, i1, k, nt, cur_clu , icl, iat, iat1, iat2
+    integer i, j, jj, i1, k, nt, cur_clu , icl, iat, iat1, iat2, icl1, icl2
     integer t, p, n, itwo,ipp, itres, ityp, ikk,ip,iexit,ifile,ik,n1,n2,n3
 
     real    :: e_part1, e_part2, e_tot
@@ -70,6 +72,10 @@ if (me .eq. 0) then	! init statistics
   mcluster(:) = 0        !numero de atoms en cada cluster
   ncluster(:) = 0        !numero de cluster que mantiene este atom 
   cluster(:,:) = 0          !numero del atom metallico
+  vx_cl(:) = 0
+  vy_cl(:) = 0
+  vz_cl(:) = 0
+  energ(:) = 0
 
   kin1(:) = 0.
   kin2(:) = 0.
@@ -80,7 +86,6 @@ if (me .eq. 0) then	! init statistics
   pot => pot1(:)
   kin_o => kin2(:)
   pot_o => pot2(:)
-  
 
   do i=1,5000
     typ(i)=1
@@ -151,15 +156,20 @@ do while(.true.)
  mcluster_o(:) = mcluster(:)
  ncluster_o(:) = ncluster(:)
  cluster_o(:,:) = cluster(:,:)
-
+ energ_o(:)   = energ(:)
 
  mcluster(:) = 0
  ncluster(:) = 0
  cluster(:,:) = 0
+ vx_cl(:) = 0.
+ vy_cl(:) = 0.
+ vz_cl(:) = 0.
+ energ(:) = 0.
+
  mcluster(0) = 1     ! нулевой кластер описывает все мономеры (размер 1) 
  cur_clu=0
 
-conts(:) = 0
+ conts(:) = 0  ! consentration
  do iat = 1,natoms
      if (typ(iat) .ne. 1) cycle
      if (iat .eq. num_vecino5(iat)) then
@@ -169,21 +179,29 @@ conts(:) = 0
 
      icl = Ncluster(num_vecino5(iat))
 !     write(*,*) iat, num_vecino5(iat),typ(iat),icl
-     if (icl .eq. 0) then
-            cur_clu = cur_clu+1    !nuevo numero
+     if (icl .eq. 0) then		! add new cluster
+            cur_clu = cur_clu+1    ! number of clusters
             icl = cur_clu
             if (typ(num_vecino5(iat)) .eq. 1) then   ! add base atom
                Ncluster(num_vecino5(iat)) = icl
                mcluster(icl) = mcluster(icl)+1
                cluster(mcluster(icl),icl) = num_vecino5(iat)
+               vx_cl(icl) = vx_cl(icl) + vx(num_vecino5(iat))
+               vy_cl(icl) = vy_cl(icl) + vy(num_vecino5(iat))
+               vz_cl(icl) = vz_cl(icl) + vz(num_vecino5(iat))
+               energ(icl) = energ(icl) + kin(num_vecino5(iat)) + pot(num_vecino5(iat))
                conts(1) = conts(1) - 1
             endif
      endif
 
      Ncluster(iat) = icl
-     if (mcluster(icl) .lt. nstat) then
+     if (mcluster(icl) .lt. nstat) then		! add atom to cluster
         mcluster(icl) = mcluster(icl)+1
         cluster(mcluster(icl),icl) = iat
+        vx_cl(icl) = vx_cl(icl) + vx(iat)
+        vy_cl(icl) = vy_cl(icl) + vy(iat)
+        vz_cl(icl) = vz_cl(icl) + vz(iat)
+        energ(icl) = energ(icl) + kin(iat) + pot(iat)
      endif
     ! write(*,*) iat, num_vecino5(iat),icl,Ncluster(iat),mcluster(icl)
      
@@ -191,6 +209,9 @@ conts(:) = 0
 
 do icl = 1, cur_clu
    call QsortC(cluster(1:mcluster(icl),icl))
+!   write(*,*) icl, energ(icl), mat*(vx_cl(icl)**2. + vy_cl(icl)**2. + vz_cl(icl)**2. )/mcluster(icl)/2., mcluster(icl)
+   energ(icl) = (energ(icl) - mat*(vx_cl(icl)**2. + vy_cl(icl)**2. + vz_cl(icl)**2. )/mcluster(icl)/2.)/mcluster(icl)
+!   write(*,*) icl, energ(icl), mcluster(icl)
    if (mcluster(icl) .le. nstat) then
       conts(mcluster(icl)) = conts(mcluster(icl)) + 1
    endif
@@ -219,25 +240,21 @@ do j=1,5000  ! todos los atoms
   
   call add_event(nev,cluster(:,ncluster(j)), mcluster(ncluster(j)),cluster_o(:,ncluster_o(j)),mcluster_o(ncluster_o(j)),nt)
 
-  do i=1,size(nev%atoms)	!mcluster_o(ncluster_o(j))
-      iat = nev%atoms(i)   !cluster_o(i,ncluster_o(j))
+  do i=1,size(nev%atoms)	!mark atoms as seen
+      iat = nev%atoms(i)   !
       cyp(iat) = 1
   enddo
 
-  e_part1 = 0
-  e_part2 = 0
-  e_tot = 0
-  do i = 1, nev%n1
-      e_part1 = e_part1 + kin(nev%atoms(i)) + pot(nev%atoms(i))
-      e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-  enddo
-  do i = nev%n1+1,size(nev%atoms)
-      e_part2 = e_part2 + kin(nev%atoms(i)) + pot(nev%atoms(i))
-      e_tot = e_tot + kin_o(nev%atoms(i)) + pot_o(nev%atoms(i))
-  enddo
-  nev%e_tot = e_tot
-  nev%e_part1 = e_part1
-  nev%e_part2 = e_part2
+  if (nev%fusion.eq. 1) then
+    nev%e_tot = energ(ncluster(nev%atoms(1)))
+    nev%e_part1 = energ_o(ncluster_o(nev%atoms(1)))
+    nev%e_part2 = energ_o(ncluster_o(nev%atoms(nev%n1+1)))
+  else
+    nev%e_tot = energ_o(ncluster_o(nev%atoms(1)))
+    nev%e_part1 = energ(ncluster(nev%atoms(1)))
+    nev%e_part2 = energ(ncluster(nev%atoms(nev%n1+1)))
+  endif
+
   nev%c1 = conts1(nev%n1)
   nev%c2 = conts1(nev%n2)
   call update_history_check(nev) !------ check for loops and update history---------
