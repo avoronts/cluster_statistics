@@ -247,8 +247,13 @@ do j=1,5000  ! todos los atoms
 
   if (nev%fusion.eq. 1) then
     nev%e_tot = energ(ncluster(nev%atoms(1)))
+!    write(*,*) 'qwe',nev%atoms(1),ncluster(nev%atoms(1)),energ(ncluster(nev%atoms(1)))
     nev%e_part1 = energ_o(ncluster_o(nev%atoms(1)))
+!    write(*,*) 'qwe',nev%atoms(1),ncluster_o(nev%atoms(1)),energ_o(ncluster_o(nev%atoms(1)))
+
     nev%e_part2 = energ_o(ncluster_o(nev%atoms(nev%n1+1)))
+!    write(*,*) 'qwe',nev%atoms(nev%n1+1),ncluster_o(nev%atoms(nev%n1+1)),energ_o(ncluster_o(nev%atoms(nev%n1+1)))
+    
   else
     nev%e_tot = energ_o(ncluster_o(nev%atoms(1)))
     nev%e_part1 = energ(ncluster(nev%atoms(1)))
