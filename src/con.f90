@@ -42,6 +42,9 @@ subroutine update_con(n,nsize)
      do i = 1, max_dt-1
        times(max_dt+1-i,:) = times(max_dt-i,:) 
      enddo
+     do i = 1, max_dt
+       times(i,:) = times(i,:) - times(max_dt,:) 
+     enddo
      tbegin = tbegin + dt
 
    endif

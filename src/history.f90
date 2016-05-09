@@ -119,7 +119,7 @@ subroutine update_history_check(ev_target)
 
 !------ check for loops ---------
     if ( associated(hist(iat1,1)%p,hist(iat2,1)%p) ) then 
-       write(*,*) 'stat: Simple loop. Remove last step (hist(j))'
+       write(*,*) 'hist: Simple loop. Remove last step (hist(j))'
         !   ev => hist(iat1,1)%p
        call rm_from_history(hist(iat1,1)%p)	! del events from history
        call rm_event(ev)			! del new event
@@ -225,7 +225,7 @@ integer function loop1(ev)
    call rm_from_history(fake_ev)
 
 !  update history for new atoms
-   write(*,*) 'hist: Complex loop. reconstruction of history'
+!   write(*,*) 'hist: Complex loop. reconstruction of history'
 
    do i=1,size(add_atoms)
 
@@ -239,10 +239,10 @@ integer function loop1(ev)
 !      if (associated(hist(iat,2)%p))  hist(iat,2)%p%t_next = true_ev%time
 
    enddo
-   write(*,*) 'hist: Complex loop. reconstruction of history'
+!   write(*,*) 'hist: Complex loop. reconstruction of history'
 
    call rm_event(ev)
-   write(*,*) 'hist: Complex loop. reconstruction of history'
+!   write(*,*) 'hist: Complex loop. reconstruction of history'
 
    deallocate(add_atoms)
 end function loop1

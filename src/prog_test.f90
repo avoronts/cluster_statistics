@@ -260,8 +260,8 @@ do j=1,5000  ! todos los atoms
     nev%e_part2 = energ(ncluster(nev%atoms(nev%n1+1)))
   endif
 
-  nev%c1 = conts1(nev%n1)
-  nev%c2 = conts1(nev%n2)
+  nev%c1 = conts(nev%n1)
+  nev%c2 = conts(nev%n2)
   call update_history_check(nev) !------ check for loops and update history---------
 
 
